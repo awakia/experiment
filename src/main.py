@@ -19,7 +19,7 @@ def outputHtml(content, filename):
 
 def getHtmlContent(text):
     import wakachi
-    aaa = wakachi.parse(html2plain(text), '\n')
+    aaa = wakachi.parse(text, '\n')
     html = ''
     for word in aaa:
         if word.surface == '\n':

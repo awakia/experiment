@@ -21,18 +21,19 @@ class Product:
         return self['ProductID']
     def __unicode__(self):
         return self['MakerName'] + ' ' + self['ProductName']
-    def getReview(self, index, withTitle=False):
+    def getReview(self, index, htmlStyle=False, withTitle=False):
         reviews = self['Review']
         if not (0 <= index < len(reviews)): return ''
         review = reviews[index]
         res = ''
         if withTitle: res += review['title'] + ':'
         res += review['message']
+        if not htmlStyle: res = util.html2plain(res)
         return res
-    def getReviews(self):
+    def getReviews(self, htmlStyle=False, withTitle=False):
         ret = []
         for i in xrange(len(self['Review'])):
-            ret.append(self.getReview(i))
+            ret.append(self.getReview(i,htmlStyle,withTitle))
         return ret
 
 #JSON_DIR='kakakusmall/'

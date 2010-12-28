@@ -63,5 +63,5 @@ def inDF(filename='df.db'):
     d.close()
 
 if __name__ == '__main__':
+    outDF()
     inDF()
-    #outDF()
