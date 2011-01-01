@@ -3,10 +3,8 @@
 '''
 @author: aikawa
 '''
-import sys
-import glob
 import codecs
-from util import *
+from util import checkMkdir, wrapHtml
 from product import iterAllProducts
 
 HTML_DIR='html/'
@@ -17,27 +15,28 @@ def outputHtml(content, filename):
     print >>fout, wrapHtml(content)
     fout.close()
 
-def getHtmlContent(text):
+def getHtmlContent(text, docid):
     import wakachi
     aaa = wakachi.parse(text, '\n')
     html = ''
-    for word in aaa:
+    for wid, word in enumerate(aaa):
         if word.surface == '\n':
             html += '<br />'
             continue
-        template = '%s'
-        if word.pos(detail=False) in [u'形容詞', u'名詞']:
-            template = '<strong class="posid' + str(word.posid) + '">%s</strong>'
+#        template = '%s'
+#        if word.pos(detail=False) in [u'形容詞', u'名詞']:
+#            template = '<strong class="posid' + str(word.posid) + '">%s</strong>'
+        template = '<span id="word' + str(docid+1) + '-' + str(wid+1) + '" class="posid' + str(word.posid) + '" title="' + word.pos(detail=True) + '">%s</span>'
         html += template % unicode(word)
     return html
 
 def products2html(products):
     for prod in products:
         reviews = prod.getReviews()
-        content = '<div>'
+        content = '<div class="review">'
         for i, review in enumerate(reviews):
-            if i: content += '</div>\n\n<div>'
-            content += getHtmlContent(review)
+            if i: content += '</div>\n\n<div class="review">'
+            content += getHtmlContent(review, i)
         content += '</div>'
         outputHtml(content, unicode(prod).replace('/','').replace(' ','_') + '.html')
 
