@@ -18,11 +18,12 @@ class WordCounter:
     def ngram(self, products, n):
         for prod in products:
             for review in prod.getReviews():
-                line = review.splitLine()
-                parsed = wakachi.parse(line) + [wakachi.DELIM]*(n-1)
-                for i in xrange(len(parsed)):
-                    key = (parsed[i+j+1] for j in xrange(-n,0))
-                    self.cnt[key] += 1
+                lines = review.split('\n')
+                for line in lines:
+                    parsed = wakachi.parse(line) + [wakachi.DELIM]*(n-1)
+                    for i in xrange(len(parsed)):
+                        key = (parsed[i+j+1] for j in xrange(-n,0))
+                        self.cnt[key] += 1
 
 def ngram(n):
     wc = WordCounter()
@@ -53,5 +54,5 @@ def input(filename):
     d.close()
 
 if __name__ == '__main__':
-    #for n in xrange(1,4): outNgram(n)
+    for n in xrange(1,4): outNgram(n)
     input('1gram.db')
