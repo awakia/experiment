@@ -36,6 +36,8 @@ class Morph:
         if usePOS: res += '/' + self.pos(usePOS!=1)
         return res
 
+DELIM=('</S>','その他,間投,*,*,*,*,*',0)
+
 def parse(text, delim=None):
     '''
     return: [Morph]
