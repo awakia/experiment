@@ -81,7 +81,7 @@ def parse(text, delim=None):
     if delim is not None: delimMorph = Morph(delim,'記号,空白,*,*,*,*,*',8)
     return reduce(lambda x,y: x+[delimMorph]+y, morphs)
 
-def parseWithDependency(text, delim=None):
+def parseWithDependency(text, delim=None, separateNumbering=False):
     '''
     return: [Morph], [group]
     '''
@@ -91,6 +91,8 @@ def parseWithDependency(text, delim=None):
     cabocha = CaboCha.Parser()
     if delim is None: txt = [text]
     else: txt = text.split(delim)
+    token_cnt = 0
+    chunk_cnt = 0
     for s in txt:
         tree = cabocha.parse(s)
         tmp = []
@@ -102,12 +104,15 @@ def parseWithDependency(text, delim=None):
         for i in xrange(tree.chunk_size()):
             chunk = tree.chunk(i)
             for j in xrange(chunk.token_size):
-                to = tree.chunk(chunk.link).token_pos if chunk.link != -1 else -1
-                c = Chunk(i, to)
+                to = tree.chunk(chunk.link).token_pos + token_cnt if chunk.link != -1 else -1
+                c = Chunk(i + chunk_cnt, to)
                 if j == chunk.head_pos: c.addInfo('head')
                 if j == chunk.func_pos: c.addInfo('func')
                 tmp.append(c)
         chunks.append(tmp)
+        if not separateNumbering:
+            token_cnt += tree.token_size() + 1
+            chunk_cnt += tree.chunk_size()
     if delim is not None:
         delimMorph = Morph(delim,'記号,空白,*,*,*,*,*',8)
         delimChunk = Chunk(-1,-1)
@@ -173,7 +178,7 @@ def _testCabocha(sentence = "太郎はこの本を二郎を見た女性に渡し
     print tree.toString(CaboCha.FORMAT_LATTICE)
 
 if __name__ == '__main__':
-    sentence="太郎はこの本を二郎を見た女性に渡した。\nすばらしい。"
+    sentence="太郎はこの本を二郎を見た女性に渡した。\n世の中はすばらしい。"
     print parse(unicode(sentence))
     res = parse(sentence, '\n')
     print res
@@ -182,7 +187,10 @@ if __name__ == '__main__':
     print res
     #print mecabParse(sentence)
     
-    m, c = parseWithDependency(sentence, '\n')
-    print len(m), len(c)
+    m, c = parseWithDependency(sentence)
+    assert(len(m) == len(c))
+    print zip(m,c)
+    m, c = parseWithDependency(sentence,'\n')
+    assert(len(m) == len(c))
     print zip(m,c)
     print cabochaParse(sentence)
