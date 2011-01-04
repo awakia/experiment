@@ -16,7 +16,7 @@ def pp_str(obj, indent= None):
         return obj
 
 def html2plain(data):
-    return xml.sax.saxutils.unescape(data, entities={'<br />':'\n'})
+    return xml.sax.saxutils.unescape(data, entities={'<br />':'\n', '<br/>':'\n', '<br>':'\n'})
 def plain2html(data):
     return xml.sax.saxutils.escape(data, entities={'\n':'<br />'})
 

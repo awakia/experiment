@@ -179,14 +179,14 @@ def _testCabocha(sentence = "太郎はこの本を二郎を見た女性に渡し
 
 if __name__ == '__main__':
     sentence="太郎はこの本を二郎を見た女性に渡した。\n世の中はすばらしい。"
-    print parse(unicode(sentence))
+    print parse(unicode(sentence,'utf-8'))
     res = parse(sentence, '\n')
     print res
     Morph.USE_ORIGIN=True
     Morph.USE_POS = 1
     print res
     #print mecabParse(sentence)
-    
+
     m, c = parseWithDependency(sentence)
     assert(len(m) == len(c))
     print zip(m,c)
