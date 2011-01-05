@@ -37,7 +37,7 @@ class Product:
         return ret
 
 #JSON_DIR='kakakusmall/'
-JSON_DIR='kakaku1217/'
+JSON_DIR=u'kakaku1217/'
 
 def inputProducts(filename):
     data = util.jsonLoad(filename)
@@ -45,8 +45,8 @@ def inputProducts(filename):
     return prods
 
 def iterAllProducts():
-    for jsonfile in glob.glob(JSON_DIR+'/*.txt'):
-        if 'category.txt' in jsonfile: continue
+    for jsonfile in glob.glob(JSON_DIR+u'/*.txt'):
+        if u'category.txt' in jsonfile: continue
         prods = inputProducts(jsonfile)
         yield jsonfile, prods
 

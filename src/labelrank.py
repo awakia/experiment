@@ -8,7 +8,7 @@ from product import iterAllProducts
 import wakachi
 from collections import defaultdict
 from serializer import Serializer
-from graph import Graph
+from graph import Graph, pagerank
 
 OUT_DIR='tfidf/'
 
@@ -71,12 +71,21 @@ def main():
     cnt = 0
     for filename, products in iterAllProducts():
         cnt += 1
-        if cnt != 3: continue
+        if cnt < 3: continue
         print >>sys.stderr, filename
         doProducts(products, nm)
         if cnt == 3: break
-    nm.graph.pack()
-    print nm.graph
+    #nm.graph.pack(); print nm.graph
+    rank = pagerank(nm.graph)
+    result = {}
+    for id, pr in enumerate(rank):
+        word = nm.ser.decode(id)
+        result[word] = pr
+    for word, pr in sorted(result.iteritems(), reverse=True):
+        print u'(%s,%d) %.3f' % (word[1], word[2], (pr*1000))
+
 
 if __name__ == '__main__':
+    import util
+    util.initIO()
     main()

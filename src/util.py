@@ -4,9 +4,21 @@
 @author: aikawa
 '''
 import sys
+import codecs
 import xml.sax.saxutils
 import json
 import os
+
+def initIO():
+    """
+    標準入出力のエンコーディングを調整します
+    """
+    encoding = sys.getfilesystemencoding()
+    if (encoding in [None, 'US-ASCII', 'ascii']): encoding = 'cp932'
+    print >>sys.stderr, encoding
+    sys.stdin  = codecs.getreader(encoding)(sys.stdin)
+    sys.stdout = codecs.getwriter(encoding)(sys.stdout)
+    sys.stderr = codecs.getwriter(encoding)(sys.stderr)
 
 def pp_str(obj, indent= None):
     if isinstance(obj, list) or isinstance(obj, dict) or isinstance(obj, tuple):
@@ -64,4 +76,4 @@ def wrapHtml(content, title=None):
     return template % content
 
 if __name__ == '__main__':
-    print html2plain('aaa<br />f&lt;')
+    print html2plain('aaa<br />f&lt;M<br/><br>bbbr')
