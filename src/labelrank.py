@@ -6,6 +6,7 @@
 import sys
 from product import iterAllProducts
 import wakachi
+from collections import defaultdict
 from serializer import Serializer
 from graph import Graph
 
@@ -14,6 +15,7 @@ OUT_DIR='tfidf/'
 class NodeMaker:
     def __init__(self):
         self.ser = Serializer()
+        self.words = defaultdict(int)
         self.graph = Graph()
     def PosNo(self, morph):
         for i, p in enumerate([u'形容詞', u'名詞']):
@@ -28,7 +30,9 @@ class NodeMaker:
             for morph in morphs:
                 if self.PosNo(morph):
                     lst.append(morph)
-                else: lst.append(None)
+                    self.words[(morph.posid, morph.original)] += 1
+                else:
+                    lst.append(None)
             lst += [None]*5
             if line == '':
                 self.consume(lst)
@@ -66,12 +70,13 @@ def main():
     nm = NodeMaker()
     cnt = 0
     for filename, products in iterAllProducts():
+        cnt += 1
+        if cnt != 3: continue
         print >>sys.stderr, filename
         doProducts(products, nm)
-        cnt += 1
         if cnt == 3: break
     nm.graph.pack()
-    print nm.graph()
+    print nm.graph
 
 if __name__ == '__main__':
     main()

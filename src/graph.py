@@ -41,7 +41,7 @@ class Graph():
                 lst.append((k,v))
             self.data[src] = lst
 
-def pagerank(graph, initial=None, dweight=1, maxLoop=20):
+def pagerank(graph, initial=None, dweight=1, maxLoop=1):
     graphSize = len(graph)
     if initial is None:
         initial = [(i,1) for i in xrange(graphSize)]
@@ -49,7 +49,7 @@ def pagerank(graph, initial=None, dweight=1, maxLoop=20):
     for i in xrange(graphSize):
         graph.addEdge(i,initID,dweight)
     graph.pack(sum1=True)
-    score = [1.0/graphSize]
+    score = [1.0/graphSize] * graphSize
     score.append(0.0)
     for _ in xrange(maxLoop):
         nextScore = [0.0] * len(graph)
