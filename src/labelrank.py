@@ -27,48 +27,51 @@ class NodeMaker:
             morphs = wakachi.parse(text)
             for morph in morphs:
                 if self.PosNo(morph):
-                    lst.append([morph])
-                else: lst.append([])
-            lst += [[] * 5]
-            if line == '': lst += [[] * 5]
+                    lst.append(morph)
+                else: lst.append(None)
+            lst += [None]*5
+            if line == '':
+                self.consume(lst)
+                lst = []
+        self.consume(lst)
     def consume(self, lst, back=3, fore=10): #0:N, 1:V, 2:Y
         size = len(lst)
         for i in xrange(size):
-            if lst[i] == []: continue
+            if lst[i] is None: continue
             posno = self.PosNo(lst[i])
             node = []
             for x in xrange(posno):
-                node.append(self.ser.encode((list[i].posid, lst[i].origin(), x)))
-                self.graph.addNode(node[x])
+                node.append(self.ser.encode((lst[i].posid, lst[i].original(), x)))
+                self.graph.registerNode(node[x])
             #for node = V
             for j in xrange(max(0,i-fore), min(size,i+back)):
-                if lst[j] == [] or self.PosNo(lst[j]) == 2: continue
-                ny = self.ser.encode((list[j].posid, lst[j].origin(), 2))
+                if lst[j] is None or self.PosNo(lst[j]) == 2: continue
+                ny = self.ser.encode((lst[j].posid, lst[j].original(), 2))
                 self.graph.addEdge(node[1], ny)
             #for node = Y
             if posno == 3:
                 for j in xrange(max(0,i-back), min(size,i+fore)):
-                    if lst[j] == []: continue
-                    nv = self.ser.encode((list[j].posid, lst[j].origin(), 1))
+                    if lst[j] is None: continue
+                    nv = self.ser.encode((lst[j].posid, lst[j].original(), 1))
                     self.graph.addEdge(node[2],nv)
-        print self.graph
 
-
-
-def doProducts(products):
-    nm = NodeMaker()
+def doProducts(products, nm=None):
+    if nm is None: nm = NodeMaker()
     for prod in products:
         for review in prod.getReviews():
             nm.regist(review)
+    return nm
 
 def main():
+    nm = NodeMaker()
     cnt = 0
     for filename, products in iterAllProducts():
         print >>sys.stderr, filename
-        doProducts(products)
+        doProducts(products, nm)
         cnt += 1
         if cnt == 3: break
-
+    nm.graph.pack()
+    print nm.graph()
 
 if __name__ == '__main__':
     main()

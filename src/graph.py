@@ -3,6 +3,7 @@
 '''
 @author: aikawa
 '''
+from collections import defaultdict
 
 class Graph():
     def __init__(self):
@@ -14,18 +15,54 @@ class Graph():
     def __repr__(self): return self.data.__repr__()
     def __str__(self): return self.data.__str__()
     def __unicode__(self): return self.data.__unicode__()
-    def addNode(self, n):
-        print len(self)
+    def append(self, edges):
+        self.data.append(edges)
+        return len(self.data)-1
+    def registerNode(self, n):
         for i in xrange(len(self.data), n):
             self.data.append([])
     def addEdge(self, src, dst, weight=1):
-        self.addNode(max(src,dst)+1)
+        self.registerNode(max(src,dst)+1)
         self.data[src].append((dst,weight))
     def addBiEdge(self, src, dst, weight=1):
-        self.__allocate(max(src,dst)+1)
+        self.registerNode(max(src,dst)+1)
         self.data[src].append((dst,weight))
         self.data[dst].append((src,weight))
+    def pack(self, sum1=False):
+        for src, edges in enumerate(self.data):
+            d = defaultdict(int)
+            totalW = 0.0
+            for dst, weight in edges:
+                d[dst] += weight
+                totalW += weight
+            lst = []
+            for k, v in sorted(d.iteritems()):
+                if sum1: v /= totalW
+                lst.append((k,v))
+            self.data[src] = lst
 
+def pagerank(graph, initial=None, dweight=1, maxLoop=20):
+    graphSize = len(graph)
+    if initial is None:
+        initial = [(i,1) for i in xrange(graphSize)]
+    initID = graph.append(initial)
+    for i in xrange(graphSize):
+        graph.addEdge(i,initID,dweight)
+    graph.pack(sum1=True)
+    score = [1.0/graphSize]
+    score.append(0.0)
+    for _ in xrange(maxLoop):
+        nextScore = [0.0] * len(graph)
+        for src, edges in enumerate(graph):
+            if src == initID:
+                for dst, weight in edges:
+                    nextScore[dst] += weight * nextScore[src]
+                continue
+            for dst, weight in edges:
+                nextScore[dst] += weight * score[src]
+        score = nextScore
+    del score[initID]
+    return score
 
 if __name__ == '__main__':
     g = Graph()
