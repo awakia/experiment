@@ -12,7 +12,7 @@ import shelve
 
 OUT_DIR='tfidf/'
 
-class WordCounter:
+class NgramCounter:
     def __init__(self):
         self.cnt = defaultdict(int)
     def ngram(self, products, n):
@@ -26,11 +26,11 @@ class WordCounter:
                         self.cnt[key] += 1
 
 def ngram(n):
-    wc = WordCounter()
-    for jsonfile, products in iterAllProducts():
-        print >>sys.stderr, jsonfile
-        wc.ngram(products, n)
-    return dict(wc.cnt)
+    nc = NgramCounter()
+    for filename, products in iterAllProducts():
+        print >>sys.stderr, filename
+        nc.ngram(products, n)
+    return dict(nc.cnt)
 
 def outNgram(n, filesuffix='gram.db'):
     filename = str(n)+filesuffix
