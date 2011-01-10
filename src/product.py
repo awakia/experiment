@@ -6,6 +6,8 @@
 
 import util
 import glob
+import re
+import sys
 
 class Product:
     '''
@@ -44,9 +46,17 @@ def inputProducts(filename):
     prods = [Product(x) for x in data]
     return prods
 
-def iterAllProducts():
+def filterfile(filename):
+    mo = re.match('.*_(\d+).txt', filename)
+    reviewcnt = int(mo.groups()[0])
+    if reviewcnt < 50: return False
+    print >>sys.stderr, filename, reviewcnt
+    return True
+
+def iterAllProducts(filterFlag=False):
     for jsonfile in glob.glob(JSON_DIR+u'/*.txt'):
         if u'category.txt' in jsonfile: continue
+        if filterFlag and not filterfile(jsonfile): continue
         prods = inputProducts(jsonfile)
         yield jsonfile, prods
 
