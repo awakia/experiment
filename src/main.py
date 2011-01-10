@@ -8,7 +8,7 @@ from util import checkMkdir, wrapHtml
 from product import iterAllProducts
 
 PLAIN_DIR='out/plain/'
-HTML_DIR='html/'
+HTML_DIR='out/html/'
 
 def outputHtml(content, filename):
     checkMkdir(HTML_DIR)
@@ -40,21 +40,21 @@ def products2html(products):
             content += getHtmlContent(review, i)
         content += '</div>'
         outputHtml(content, unicode(prod).replace('/','').replace(' ','_') + '.html')
-        
-def products2text(products):
+
+def products2text(products, category):
     for prod in products:
         content = prod.getReviews(htmlStyle=True)
         filename = unicode(prod).replace('/','').replace(' ','_') + '.txt'
-        checkMkdir(PLAIN_DIR)
-        fout = codecs.open(HTML_DIR+filename, 'w', 'utf-8')
-        print >>fout, wrapHtml(content)
+        dirname = PLAIN_DIR+category+'/'
+        checkMkdir(dirname)
+        fout = codecs.open(dirname+filename, 'w', 'utf-8')
+        print >>fout, '\n'.join(content)
         fout.close()
 
 def doAll(html=False):
-    for jsonfile, prods in iterAllProducts():
-        print jsonfile
+    for category, prods in iterAllProducts(minReviewCount=30):
         if html: products2html(prods)
-        else: products2text(prods)
+        else: products2text(prods, category)
 
 if __name__ == '__main__':
     '''

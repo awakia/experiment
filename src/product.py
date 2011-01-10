@@ -7,7 +7,6 @@
 import util
 import glob
 import re
-import sys
 
 class Product:
     '''
@@ -23,6 +22,8 @@ class Product:
         return self['ProductID']
     def __unicode__(self):
         return self['MakerName'] + ' ' + self['ProductName']
+    def reviewSize(self):
+        return len(self['Review'])
     def getReview(self, index, htmlStyle=False, withTitle=False):
         reviews = self['Review']
         if not (0 <= index < len(reviews)): return ''
@@ -34,7 +35,7 @@ class Product:
         return res
     def getReviews(self, htmlStyle=False, withTitle=False):
         ret = []
-        for i in xrange(len(self['Review'])):
+        for i in xrange(self.reviewSize()):
             ret.append(self.getReview(i,htmlStyle,withTitle))
         return ret
 
@@ -46,19 +47,20 @@ def inputProducts(filename):
     prods = [Product(x) for x in data]
     return prods
 
-def filterfile(filename):
-    mo = re.match('.*_(\d+).txt', filename)
-    reviewcnt = int(mo.groups()[0])
-    if reviewcnt < 50: return False
-    print >>sys.stderr, filename, reviewcnt
-    return True
+def extractinfo(filename):
+    mo = re.match('(.*/)*?([^/]*)_(\d+).txt', filename)
+    category = mo.groups()[-2]
+    reviewcnt = int(mo.groups()[-1])
+    return category, reviewcnt
 
-def iterAllProducts(filterFlag=False):
-    for jsonfile in glob.glob(JSON_DIR+u'/*.txt'):
-        if u'category.txt' in jsonfile: continue
-        if filterFlag and not filterfile(jsonfile): continue
-        prods = inputProducts(jsonfile)
-        yield jsonfile, prods
+def iterAllProducts(minReviewCount=0):
+    for filename in glob.glob(JSON_DIR+u'/*.txt'):
+        if u'category.txt' in filename: continue
+        category, reviewcnt = extractinfo(filename)
+        if reviewcnt < minReviewCount: continue
+        print category, reviewcnt
+        prods = inputProducts(filename)
+        yield category, prods
 
 if __name__ == '__main__':
     import json
