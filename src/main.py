@@ -7,6 +7,7 @@ import codecs
 from util import checkMkdir, wrapHtml
 from product import iterAllProducts
 
+RANK_DIR='out/rank/'
 PLAIN_DIR='out/plain/'
 HTML_DIR='out/html/'
 
@@ -42,13 +43,22 @@ def products2html(products):
         outputHtml(content, unicode(prod).replace('/','').replace(' ','_') + '.html')
 
 def products2text(products, category):
+    dirname = PLAIN_DIR+category+'/'
+    checkMkdir(dirname)
     for prod in products:
         content = prod.getReviews(htmlStyle=True)
         filename = unicode(prod).replace('/','').replace(' ','_') + '.txt'
-        dirname = PLAIN_DIR+category+'/'
-        checkMkdir(dirname)
         fout = codecs.open(dirname+filename, 'w', 'utf-8')
         print >>fout, '\n'.join(content)
+        fout.close()
+
+def createRank(minReviewCount=0):
+    checkMkdir(RANK_DIR)
+    for category, products in iterAllProducts(minReviewCount):
+        ranking = []
+        for prod in products: ranking.append(unicode(prod))
+        fout = codecs.open(RANK_DIR+category+'_'+str(len(products))+'.txt', 'w', 'utf-8')
+        print >>fout, '\n'.join(ranking)
         fout.close()
 
 def doAll(html=False):
@@ -61,4 +71,5 @@ if __name__ == '__main__':
     prods = inputProducts(JSON_DIR+u'プリンタ_343.txt')
     products2html(prods)
     '''
+    #createRank()
     doAll()
