@@ -9,6 +9,7 @@ from product import iterAllProducts
 import wakachi
 from util import checkMkdir, pp_str
 import shelve
+from math import *
 
 OUT_DIR='tfidf/'
 
@@ -29,8 +30,8 @@ def tf(products):
 
 def df():
     wc = WordCounter()
-    for jsonfile, products in iterAllProducts():
-        print >>sys.stderr, jsonfile
+    for category, products in iterAllProducts():
+        print >>sys.stderr, category
         wc.regist(products)
     return dict(wc.cnt)
 
@@ -56,12 +57,24 @@ def outDF(filename='df.db'):
 
 def inDF(filename='df.db'):
     d = shelve.open(OUT_DIR+filename)
-    print len(d.keys())
+    print >>sys.stderr, len(d.keys())
     for k, v in sorted(d.iteritems(), key=lambda x:x[1], reverse=True):
         #print '(%s,%d)' % (k,v),
         print k, v
     d.close()
 
+def outRdfGdf(out=sys.stdout): #google ngram based TF-IDF
+    import vocab
+    vocab = vocab.build()
+    filename = 'df.db'
+    d = shelve.open(OUT_DIR+filename)
+    print >>sys.stderr, len(d.keys())
+    for k, v in sorted(d.iteritems(), key=lambda x:float(x[1])/log(vocab.get(x[0].decode('utf-8'),2)), reverse=True):
+        g = vocab.get(k.decode('utf-8'),0)
+        if 0 < g < 200000000:
+            print >>out, k, v, g, float(v)/g
+    d.close()
+
 if __name__ == '__main__':
     outDF()
-    inDF()
+    outRdfGdf()
