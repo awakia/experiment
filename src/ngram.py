@@ -10,7 +10,7 @@ import wakachi
 from util import checkMkdir, pp_str
 import shelve
 
-OUT_DIR='tfidf/'
+OUT_DIR='out/ngram/'
 
 class NgramCounter:
     def __init__(self):
@@ -27,8 +27,8 @@ class NgramCounter:
 
 def ngram(n):
     nc = NgramCounter()
-    for filename, products in iterAllProducts():
-        print >>sys.stderr, filename
+    for category, products in iterAllProducts():
+        print >>sys.stderr, category
         nc.ngram(products, n)
     return dict(nc.cnt)
 
