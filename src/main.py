@@ -7,6 +7,7 @@ import codecs
 from util import checkMkdir, wrapHtml
 from product import iterAllProducts
 
+PLAIN_DIR='out/plain/'
 HTML_DIR='html/'
 
 def outputHtml(content, filename):
@@ -39,11 +40,21 @@ def products2html(products):
             content += getHtmlContent(review, i)
         content += '</div>'
         outputHtml(content, unicode(prod).replace('/','').replace(' ','_') + '.html')
+        
+def products2text(products):
+    for prod in products:
+        content = prod.getReviews(htmlStyle=True)
+        filename = unicode(prod).replace('/','').replace(' ','_') + '.txt'
+        checkMkdir(PLAIN_DIR)
+        fout = codecs.open(HTML_DIR+filename, 'w', 'utf-8')
+        print >>fout, wrapHtml(content)
+        fout.close()
 
-def doAll():
+def doAll(html=False):
     for jsonfile, prods in iterAllProducts():
         print jsonfile
-        products2html(prods)
+        if html: products2html(prods)
+        else: products2text(prods)
 
 if __name__ == '__main__':
     '''
