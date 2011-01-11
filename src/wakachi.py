@@ -25,7 +25,7 @@ class Morph:
                     break
         self.posid = posid
     def __repr__(self):
-        return self.__unicode__()
+        return self.__unicode__().encode('unicode-escape')
     def __str__(self):
         return str(self.posid)
     def __unicode__(self):
@@ -54,7 +54,7 @@ class Chunk():
         self.to = to
         self.info = []
     def __repr__(self):
-        return self.__unicode__()
+        return self.__unicode__().encode('unicode-escape')
     def __str__(self):
         return '%d,%d{%s}' % (self.id, self.to, '|'.join(self.info))
     def __unicode__(self):
@@ -179,18 +179,20 @@ def _testCabocha(sentence = "太郎はこの本を二郎を見た女性に渡し
 
 if __name__ == '__main__':
     sentence="太郎はこの本を二郎を見た女性に渡した。\n世の中はすばらしい。"
-    print parse(unicode(sentence,'utf-8'))
+    import util
+    util.initIO()
+    print repr(parse(unicode(sentence,'utf-8'))).decode('unicode-escape')
     res = parse(sentence, '\n')
-    print res
+    print repr(res).decode('unicode-escape')
     Morph.USE_ORIGIN=True
     Morph.USE_POS = 1
-    print res
-    #print mecabParse(sentence)
+    print repr(res).decode('unicode-escape')
+    #print repr(mecabParse(sentence)).decode('string-escape')
 
     m, c = parseWithDependency(sentence)
     assert(len(m) == len(c))
-    print zip(m,c)
+    print repr(zip(m,c)).decode('unicode-escape')
     m, c = parseWithDependency(sentence,'\n')
     assert(len(m) == len(c))
-    print zip(m,c)
-    print cabochaParse(sentence)
+    print repr(zip(m,c)).decode('unicode-escape')
+    #print repr(cabochaParse(sentence)).decode('string-escape')
