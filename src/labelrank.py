@@ -69,10 +69,10 @@ def doProducts(products, nm=None):
 def main():
     nm = NodeMaker()
     cnt = 0
-    for filename, products in iterAllProducts():
+    for category, products in iterAllProducts():
         cnt += 1
-        if cnt < 3: continue
-        print >>sys.stderr, filename
+        if cnt < 2: continue
+        print >>sys.stderr, category
         doProducts(products, nm)
         if cnt == 3: break
     #nm.graph.pack(); print nm.graph
