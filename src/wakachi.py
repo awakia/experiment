@@ -81,6 +81,10 @@ def parse(text, delim=None):
     if delim is not None: delimMorph = Morph(delim,'記号,空白,*,*,*,*,*',8)
     return reduce(lambda x,y: x+[delimMorph]+y, morphs)
 
+
+def parseLine(text, lf='\n'):
+    return [parse(line) for line in text.split(lf)]
+
 def parseWithDependency(text, delim=None, separateNumbering=False):
     '''
     return: [Morph], [group]

@@ -28,7 +28,7 @@ def pp_str(obj, indent= None):
         return obj
 
 def html2plain(data):
-    return xml.sax.saxutils.unescape(data, entities={'<br />':'\n', '<br/>':'\n', '<br>':'\n'})
+    return xml.sax.saxutils.unescape(data, entities={'&quot;':'"', '&apos;':"'", '<br />':'\n', '<br/>':'\n', '<br>':'\n'})
 def plain2html(data):
     return xml.sax.saxutils.escape(data, entities={'\n':'<br />'})
 
@@ -58,16 +58,17 @@ def toUnicode(str):
             pass
     return str
 
-def wrapHtml(content, title=None):
+def wrapHtml(content, title=None, needRoot=False):
     if title is not None: title = '<title>%s</title>' % title
     else: title = ''
+    root = '/' if needRoot else ''
     template='''<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 ''' + title + '''
-<link href="_/styles.css" rel="stylesheet" type="text/css" media="all">
-<script type="text/javascript" src="_/scripts.js"></script>
+<link href="''' + root + '''_/styles.css" rel="stylesheet" type="text/css" media="all">
+<script type="text/javascript" src="''' + root + '''_/scripts.js"></script>
 </head>
 <body>
 %s

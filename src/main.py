@@ -11,36 +11,35 @@ RANK_DIR='out/rank/'
 PLAIN_DIR='out/plain/'
 HTML_DIR='out/html/'
 
-def outputHtml(content, filename):
-    checkMkdir(HTML_DIR)
-    fout = codecs.open(HTML_DIR+filename, 'w', 'utf-8')
-    print >>fout, wrapHtml(content)
-    fout.close()
-
 def getHtmlContent(text, docid):
     import wakachi
-    aaa = wakachi.parse(text, '\n')
+    aaa = wakachi.parseLine(text, '<br />')
     html = ''
-    for wid, word in enumerate(aaa):
-        if word.surface == '\n':
-            html += '<br />'
-            continue
-#        template = '%s'
-#        if word.pos(detail=False) in [u'形容詞', u'名詞']:
-#            template = '<strong class="posid' + str(word.posid) + '">%s</strong>'
-        template = '<span id="word' + str(docid+1) + '-' + str(wid+1) + '" class="posid' + str(word.posid) + '" title="' + word.pos(detail=True) + '">%s</span>'
-        html += template % unicode(word)
+    for lid, a in enumerate(aaa):
+        if lid: html += '<br />'
+        for wid, word in enumerate(a):
+            template = '<span id="word' + str(docid) + '-' + str(lid) + '-' + str(wid) + '" class="posid' + str(word.posid) + '" title="' + word.pos(detail=True) + '">%s</span>'
+            html += template % unicode(word)
     return html
 
-def products2html(products):
+def products2html(products, category=None):
+    dirname = HTML_DIR
+    needRoot = False
+    if category is not None:
+        dirname += category + '/'
+        needRoot = True
+    checkMkdir(dirname)
     for prod in products:
-        reviews = prod.getReviews()
+        reviews = prod.getReviews(htmlStyle=True)
         content = '<div class="review">'
         for i, review in enumerate(reviews):
             if i: content += '</div>\n\n<div class="review">'
             content += getHtmlContent(review, i)
         content += '</div>'
-        outputHtml(content, unicode(prod).replace('/','').replace(' ','_') + '.html')
+        filename = unicode(prod).replace('/','').replace(' ','_') + '.html'
+        fout = codecs.open(dirname+filename, 'w', 'utf-8')
+        print >>fout, wrapHtml(content, needRoot=needRoot)
+        fout.close()
 
 def products2text(products, category):
     dirname = PLAIN_DIR+category+'/'
@@ -63,7 +62,7 @@ def createRank(minReviewCount=0):
 
 def doAll(html=False):
     for category, prods in iterAllProducts(minReviewCount=30):
-        if html: products2html(prods)
+        if html: products2html(prods, category)
         else: products2text(prods, category)
 
 if __name__ == '__main__':
@@ -71,5 +70,5 @@ if __name__ == '__main__':
     prods = inputProducts(JSON_DIR+u'プリンタ_343.txt')
     products2html(prods)
     '''
-    #createRank()
-    doAll()
+    #createRank(50)
+    doAll(html=True)
