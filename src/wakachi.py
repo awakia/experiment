@@ -30,6 +30,9 @@ class Morph:
         return str(self.posid)
     def __unicode__(self):
         return self.str(Morph.USE_ORIGIN, Morph.USE_POS)
+    def __cmp__(self, other): # compare with pos and original form
+        if cmp(self.posid, other.posid) != 0: return cmp(self.posid, other.posid)
+        return cmp(self.original(), other.original())
     def original(self):
         if self.features[6] != '*': return self.features[6]
         else: return self.surface
@@ -45,6 +48,17 @@ class Morph:
         else: res = self.surface
         if usePOS: res += '/' + self.pos(usePOS!=1)
         return res
+    
+    def isAdj(self): return 10 <= self.posid <= 12 #形容詞
+    def isPart(self): return 13 <= self.posid <= 24 #助詞
+    def isAuxverb(self): return self.posid == 25 #助動詞
+    def isConj(self): return self.posid == 26 #接続詞
+    def isPre(self): return 27 <= self.posid <= 30 #接頭詞
+    def isVerb(self): return 31 <= self.posid <= 33 #動詞
+    def isAdv(self): return 34 <= self.posid <= 35 #副詞
+    def isNoun(self): return 36 <= self.posid <= 67 #名詞
+    def isPrenoun(self): return self.posid == 68 #連体詞
+    
 
 DELIM=('</S>','その他,間投,*,*,*,*,*',0)
 
