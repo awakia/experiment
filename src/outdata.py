@@ -22,7 +22,7 @@ def getHtmlContent(text, docid):
             html += template % unicode(word)
     return html
 
-def products2html(products, category=None):
+def products2html(products, category=None, maxReview=None):
     dirname = HTML_DIR
     needRoot = False
     if category is not None:
@@ -30,7 +30,7 @@ def products2html(products, category=None):
         needRoot = True
     checkMkdir(dirname)
     for prod in products:
-        reviews = prod.getReviews(htmlStyle=True)
+        reviews = prod.getReviews(max=maxReview, htmlStyle=True)
         content = '<div class="review">'
         for i, review in enumerate(reviews):
             if i: content += '</div>\n\n<div class="review">'
@@ -61,8 +61,10 @@ def createRank(minReviewCount=0):
         fout.close()
 
 def doAll(html=False):
+    selected = [u'Macノート',u'MP3プレーヤー',u'PDA',u'インク',u'カメラ',u'キーボード',u'コンタクトレンズ 1day',u'セキュリティソフト',u'チャイルドシート',u'テレビ',u'テレビリモコン',u'トースター',u'ドライバー',u'パソコン',u'パソコンゲーム',u'ヒーター・ストーブ',u'プリンタ',u'マッサージ器',u'ミシン',u'レンズ',u'冷蔵庫・冷凍庫',u'動画編集ソフト',u'地デジアンテナ',u'女性用シェーバー',u'掃除機',u'洗濯機',u'生ごみ処理機',u'自転車',u'電子ピアノ',u'香水']
     for category, prods in iterAllProducts(minReviewCount=30):
-        if html: products2html(prods, category)
+        if not category in selected: continue
+        if html: products2html(prods, category, 10)
         else: products2text(prods, category)
 
 if __name__ == '__main__':

@@ -33,9 +33,11 @@ class Product:
         res += review['message']
         if not htmlStyle: res = util.html2plain(res)
         return res
-    def getReviews(self, htmlStyle=False, withTitle=False):
+    def getReviews(self, max=None, htmlStyle=False, withTitle=False):
         ret = []
-        for i in xrange(self.reviewSize()):
+        size = self.reviewSize()
+        if max is not None: size = min(max,size)
+        for i in xrange(size):
             ret.append(self.getReview(i,htmlStyle,withTitle))
         return ret
 
