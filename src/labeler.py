@@ -3,18 +3,17 @@
 '''
 @author: aikawa
 '''
-import sys
 import wakachi
 from collections import defaultdict
 
 class Candidates:
     def __init__(self):
-        self.nouns = defaultdict(list)
-        self.adjs = defaultdict(list)
+        self.nounps = defaultdict(list)
+        self.adjps = defaultdict(list)
     def registerNounP(self, phrase, p, dlid):
-        self.nouns[phrase].append((dlid,p))
+        self.nounps[phrase].append((dlid,p))
     def registerAdjP(self, phrase, p, dlid):
-        self.adjs[phrase].append((dlid,p))
+        self.adjps[phrase].append((dlid,p))
     def _addAsNounP(self, morphs, phrase, p, dlid): # [連体詞]?[名詞]+
         i = p[-1]+1
         if i == len(morphs) or not morphs[i].isNoun():
@@ -39,14 +38,14 @@ class Candidates:
             else:
                 i = self._addAsAdjP(morphs, '', [i], dlid)
 
-def parse(text, docid):
-    cand = Candidates()
+def getPhrase(text, docid, cand = Candidates()):
     mmm = wakachi.parseLine(text, '<br />')
     for lid, morphs in enumerate(mmm):
         cand.check(morphs, docid, lid)
-    print repr(cand.nouns).decode('unicode-escape')
-    print repr(cand.adjs).decode('unicode-escape')
+    return dict(cand.nounps), dict(cand.adjps)
 
 if __name__ == '__main__':
-    text = 'とても小さく美しい花<br />機能性に優れる<br />解像度が高い<br />解像度が低い'
-    parse(text, 0)
+    nounps, adjps = getPhrase('とても小さく美しい花<br />機能性に優れる<br />解像度が高い<br />解像度が低い', 0)
+    nounps, adjps = getPhrase('座高が高い', 1)
+    print repr(nounps).decode('unicode-escape')
+    print repr(adjps).decode('unicode-escape')
