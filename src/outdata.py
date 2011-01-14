@@ -62,8 +62,7 @@ def createRank(minReviewCount=0):
 
 def doAll(html=False):
     selected = [u'Macノート',u'MP3プレーヤー',u'PDA',u'インク',u'カメラ',u'キーボード',u'コンタクトレンズ 1day',u'セキュリティソフト',u'チャイルドシート',u'テレビ',u'テレビリモコン',u'トースター',u'ドライバー',u'パソコン',u'パソコンゲーム',u'ヒーター・ストーブ',u'プリンタ',u'マッサージ器',u'ミシン',u'レンズ',u'冷蔵庫・冷凍庫',u'動画編集ソフト',u'地デジアンテナ',u'女性用シェーバー',u'掃除機',u'洗濯機',u'生ごみ処理機',u'自転車',u'電子ピアノ',u'香水']
-    for category, prods in iterAllProducts(minReviewCount=30):
-        if not category in selected: continue
+    for category, prods in iterAllProducts(minReviewCount=30, categoryFilter=selected):
         if html: products2html(prods, category, 10)
         else: products2text(prods, category)
 

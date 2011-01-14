@@ -55,11 +55,12 @@ def extractinfo(filename):
     reviewcnt = int(mo.groups()[-1])
     return category, reviewcnt
 
-def iterAllProducts(minReviewCount=0):
+def iterAllProducts(minReviewCount=0, categoryFilter=None):
     for filename in glob.glob(JSON_DIR+u'/*.txt'):
         if u'category.txt' in filename: continue
         category, reviewcnt = extractinfo(filename)
         if reviewcnt < minReviewCount: continue
+        if categoryFilter is not None and category not in categoryFilter: continue
         print category, reviewcnt
         prods = inputProducts(filename)
         yield category, prods
