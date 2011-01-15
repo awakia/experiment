@@ -20,12 +20,12 @@ class Candidates:
         self.nounps = defaultdict(list) #map[phrase:str]=[((did,lid),(wid-start,,,wid-end))]
         self.adjps = defaultdict(list)
         self.position = {}
-    def registerNounP(self, phrase, p, dlid):
-        self.nounps[phrase].append((dlid,p))
-        self.position[(dlid, p[0])] = (p[-1], 'N')
-    def registerAdjP(self, phrase, p, dlid):
-        self.adjps[phrase].append((dlid,p))
-        self.position[(dlid, p[0])] = (p[-1], 'A')
+    def registerNounP(self, phrase, p, goupid):
+        self.nounps[phrase].append((goupid,p))
+        self.position[(goupid, p[0])] = (p[-1], 'N')
+    def registerAdjP(self, phrase, p, goupid):
+        self.adjps[phrase].append((goupid,p))
+        self.position[(goupid, p[0])] = (p[-1], 'A')
     def _addAsNounP(self, morphs, phrase, p, groupid): # [連体詞]?[名詞]+
         i = p[-1]+1
         if i == len(morphs) or not morphs[i].isNoun():
@@ -36,7 +36,11 @@ class Candidates:
     def _addAsAdjP(self, morphs, phrase, p, groupid): # [副詞]*[形容詞]
         i = p[-1]
         if i+1 == len(morphs) or not morphs[i].isAdv():
-            if morphs[i].isAdj(): self.registerAdjP(phrase+morphs[i].original(), tuple(p), groupid)
+            if morphs[i].isAdj():
+                if i+1 < len(morphs) and morphs[i+1].posid == 57:
+                    self.registerNounP(phrase+morphs[i].surface+morphs[i+1].surface, tuple(p+[i+1]), groupid)
+                else:
+                    self.registerAdjP(phrase+morphs[i].original(), tuple(p), groupid)
             return i+1
         else:
             return self._addAsAdjP(morphs, phrase+morphs[i].surface, p+[i+1], groupid)
@@ -47,11 +51,11 @@ class Candidates:
                 i = self._addAsNounP(morphs, morphs[i].surface, [i], groupid)
             else:
                 i = self._addAsAdjP(morphs, '', [i], groupid)
-    def getAllInternal(self, span=1):
+    def iterAllInternal(self, spanMax=1, spanMin=1):
         for (ak,av), (bk,bv) in pairwise(sorted(self.position.iteritems())):
             if ak[0] != bk[0]: continue #groupids are different
-            diff = bk[1] - av[0] #b-beggining-position - a-ending-position
-            if diff <= span:
+            diff = bk[1] - av[0] - 1 #b-beggining-position - a-ending-position
+            if spanMin <= diff <= spanMax:
                 yield ak[0], (ak[1],av[0]), (bk[1],bv[0])
 
 def getPhrase(text, docid, cand = Candidates()):
@@ -74,7 +78,7 @@ def doAll(maxReview=10):
                 morphslist = wakachi.parseLine(review, '<br />')
                 words[-1][-1].append(morphslist)
                 getPhrase(morphslist, (cid,pid,rid), cand)
-    for p, bgn, end in cand.getAllInternal():
+    for p, bgn, end in cand.iterAllInternal(spanMax=1, spanMin=0):
         cid, pid, rid, lid = p[0][0], p[0][1], p[0][2], p[1]
         print cid, pid, rid, lid, bgn, end,
         for wid in xrange(bgn[0],end[1]+1):
