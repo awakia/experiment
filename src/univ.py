@@ -7,6 +7,7 @@ Created on 2011/01/17
 '''
 from collections import defaultdict
 from util import pairwise
+import logging
 
 class Word:
     POS_LIST=['その他,間投,*,*','フィラー,*,*,*','感動詞,*,*,*','記号,アルファベット,*,*','記号,一般,*,*','記号,括弧開,*,*','記号,括弧閉,*,*','記号,句点,*,*','記号,空白,*,*','記号,読点,*,*','形容詞,自立,*,*','形容詞,接尾,*,*','形容詞,非自立,*,*','助詞,格助詞,一般,*','助詞,格助詞,引用,*','助詞,格助詞,連語,*','助詞,係助詞,*,*','助詞,終助詞,*,*','助詞,接続助詞,*,*','助詞,特殊,*,*','助詞,副詞化,*,*','助詞,副助詞,*,*','助詞,副助詞／並立助詞／終助詞,*,*','助詞,並立助詞,*,*','助詞,連体化,*,*','助動詞,*,*,*','接続詞,*,*,*','接頭詞,形容詞接続,*,*','接頭詞,数接続,*,*','接頭詞,動詞接続,*,*','接頭詞,名詞接続,*,*','動詞,自立,*,*','動詞,接尾,*,*','動詞,非自立,*,*','副詞,一般,*,*','副詞,助詞類接続,*,*','名詞,サ変接続,*,*','名詞,ナイ形容詞語幹,*,*','名詞,一般,*,*','名詞,引用文字列,*,*','名詞,形容動詞語幹,*,*','名詞,固有名詞,一般,*','名詞,固有名詞,人名,一般','名詞,固有名詞,人名,姓','名詞,固有名詞,人名,名','名詞,固有名詞,組織,*','名詞,固有名詞,地域,一般','名詞,固有名詞,地域,国','名詞,数,*,*','名詞,接続詞的,*,*','名詞,接尾,サ変接続,*','名詞,接尾,一般,*','名詞,接尾,形容動詞語幹,*','名詞,接尾,助数詞,*','名詞,接尾,助動詞語幹,*','名詞,接尾,人名,*','名詞,接尾,地域,*','名詞,接尾,特殊,*','名詞,接尾,副詞可能,*','名詞,代名詞,一般,*','名詞,代名詞,縮約,*','名詞,動詞非自立的,*,*','名詞,特殊,助動詞語幹,*','名詞,非自立,一般,*','名詞,非自立,形容動詞語幹,*','名詞,非自立,助動詞語幹,*','名詞,非自立,副詞可能,*','名詞,副詞可能,*,*','連体詞,*,*,*']
@@ -35,7 +36,6 @@ class Word:
     def isNoun(self): return 36 <= self.posid <= 67 #名詞
     def isPrenoun(self): return self.posid == 68 #連体詞
 
-
 surfaceDict = defaultdict(list) #surface->[position]
 originDict = defaultdict(list) #origin->[position]
 
@@ -52,13 +52,13 @@ def iterDoc():
                     for wid, word in enumerate(line):
                         yield cid, pid, rid, lid, wid, word
 
-def addDict(phrase, posid):
-    global surfaceDict, originDict
+def addDict(at, phrase, posid):
+    global surfaceDict, originDict, positions
     s = u''.join(map(lambda x: x.surface, phrase[0:-1]))
     sur = s + phrase[-1].surface
     ori = s + phrase[-1].origin
-    surfaceDict[(sur, posid)]
-    originDict[(ori, posid)]
+    surfaceDict[(sur, posid)].append(at)
+    originDict[(ori, posid)].append(at)
     return Word(sur,ori,posid)
 
 def init(maxReview=10):
@@ -66,7 +66,6 @@ def init(maxReview=10):
     import cPickle, os
     import product
     import wakachi
-    import logging
     if os.path.exists('out/doc.pkl'):
         file = open('out/doc.pkl', 'rb')
         doc = cPickle.load(file)
@@ -96,7 +95,7 @@ def init(maxReview=10):
                     for wid, (wa, wb) in enumerate(pairwise(line)):
                         if wa.posid == 40 and wb.posid == 20: #「非常に」など
                             doc[cid][pid][rid][lid][wid] = Word(wa.surface+wb.surface, wa.surface+wb.origin, 34)
-                            print wa.surface+wb.surface, wid
+                            #print wa.surface+wb.surface
                             del doc[cid][pid][rid][lid][wid+1]
 
     logging.log(logging.INFO, 'pre-combine completed')
@@ -110,16 +109,15 @@ def init(maxReview=10):
                         if line[wid].isNoun() or line[wid].isPre():
                             w = wid + 1
                             while w < len(line) and line[w].isNoun(): w += 1
-                            line[wid] = addDict(line[wid:w], line[w-1].posid)
+                            line[wid] = addDict((cid,pid,rid,lid,wid), line[wid:w], line[w-1].posid)
                             del line[wid+1:w]
                         elif line[wid].isAdj() or line[wid].isAdv():
                             w = wid + 1
                             while w < len(line) and (line[w].isAdj() or line[w].isAdv()): w += 1
                             if line[w-1].isAdv():
-                                line[wid] = addDict(line[wid:w], line[w-1].posid)
+                                line[wid] = addDict((cid,pid,rid,lid,wid), line[wid:w], line[w-1].posid)
                                 del line[wid+1:w]
                         wid += 1
-
 
     logging.log(logging.INFO, 'phrase register completed')
     #cnt = 0
