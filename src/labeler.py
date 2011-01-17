@@ -6,14 +6,8 @@
 import types
 import wakachi
 from collections import defaultdict
-from itertools import tee, izip
 from product import iterAllProducts
-
-def pairwise(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = tee(iterable)
-    next(b, None)
-    return izip(a, b)
+from util import pairwise
 
 class Candidates:
     def __init__(self):
