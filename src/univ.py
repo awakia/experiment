@@ -66,6 +66,7 @@ def init(maxReview=10):
     import cPickle, os
     import product
     import wakachi
+    import logging
     if os.path.exists('out/doc.pkl'):
         file = open('out/doc.pkl', 'rb')
         doc = cPickle.load(file)
@@ -86,11 +87,7 @@ def init(maxReview=10):
         cPickle.dump(doc, file)
         file.close()
 
-    print 'document input completed'
-
-    cnt = 0
-    for _ in iterDoc(): cnt+=1
-    print cnt
+    logging.log(logging.INFO, 'document input completed')
 
     for cid, category in enumerate(doc):
         for pid, product in enumerate(category):
@@ -102,11 +99,7 @@ def init(maxReview=10):
                             print wa.surface+wb.surface, wid
                             del doc[cid][pid][rid][lid][wid+1]
 
-    print 'pre-combine completed'
-
-    cnt = 0
-    for _ in iterDoc(): cnt+=1
-    print cnt
+    logging.log(logging.INFO, 'pre-combine completed')
 
     for cid, category in enumerate(doc):
         for pid, product in enumerate(category):
@@ -127,10 +120,11 @@ def init(maxReview=10):
                                 del line[wid+1:w]
                         wid += 1
 
-    print 'register completed'
-    cnt = 0
-    for _ in iterDoc(): cnt+=1
-    print cnt
+
+    logging.log(logging.INFO, 'phrase register completed')
+    #cnt = 0
+    #for _ in iterDoc(): cnt+=1
+    #print cnt
 
     #for cid, pid, rid, lid, wid, word in iterDoc(): print unicode(word),
 
