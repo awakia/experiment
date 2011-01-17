@@ -7,6 +7,7 @@
 import util
 import glob
 import re
+import unicodedata
 
 class Product:
     '''
@@ -51,7 +52,7 @@ def inputProducts(filename):
 
 def extractinfo(filename):
     mo = re.match('(.*/)*?([^/]*)_(\d+).txt', filename)
-    category = mo.groups()[-2]
+    category = unicodedata.normalize('NFC', mo.groups()[-2])
     reviewcnt = int(mo.groups()[-1])
     return category, reviewcnt
 
