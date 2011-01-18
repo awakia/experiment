@@ -3,11 +3,12 @@
 '''
 @author: aikawa
 '''
-
 import util
 import glob
 import re
 import unicodedata
+import logging
+logging.basicConfig(level=logging.INFO)
 
 #50個以上レビューが存在し、全てがきちんと同じカテゴリのものが取得できている物
 SELECTED_FLAG = True
@@ -67,7 +68,7 @@ def iterAllProducts(minReviewCount=0, categoryFilter=None):
         category, reviewcnt = extractinfo(filename)
         if reviewcnt < minReviewCount: continue
         if categoryFilter is not None and category not in categoryFilter: continue
-        print category, reviewcnt
+        logging.log(logging.INFO, category + ' ' + str(reviewcnt))
         prods = inputProducts(filename)
         yield category, prods
 
