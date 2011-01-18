@@ -41,8 +41,35 @@ originDict = defaultdict(list) #origin->[position]
 
 doc = [] #doc[categoryID][productID][reviewID][lineID][wordID]=word
 
-candY = []
-candV = []
+dictY = [(36,u'デザイン'),(36,u'機能'),(51,u'機能性'),(51,u'操作性'),(38,u'音'),(38,u'音質'),(51,u'使用感'),(38,u'液晶')]
+dictV = [(10,u'良い'),(36,u'満足'),(37,u'問題')]
+
+def getWord(position):
+    (cid, pid, rid, lid, wid) = position
+    return doc[cid][pid][rid][lid][wid]
+def getWords(p1, p2):
+    if p1[:-1] != p2[:-1]: return 'ERORR'+str(p1)+'|'+str(p2)
+    (cid, pid, rid, lid, wstart) = p1
+    wend = p2[-1]+1
+    return [doc[cid][pid][rid][lid][wid] for wid in xrange(wstart,wend)]
+
+def getTemplates(spanMax=1, spanMin=0):
+    positions = {}
+    for y in dictY:
+        for p in originDict[y]:
+            positions[p] = 'y'
+    for v in dictV:
+        for p in originDict[v]:
+            positions[p] = 'v'
+    templates = []
+    for (p1, yv1), (p2, yv2) in pairwise(sorted(positions.iteritems())):
+        if yv1 == yv2: continue
+        if p1[:-1] != p2[:-1]: continue
+        diff = p2[-1] - p1[-1] - 1
+        if spanMin <= diff <= spanMax:
+            templates.append((p1,p2,yv1+yv2))
+    return templates
+
 
 def iterDoc():
     for cid, category in enumerate(doc):
@@ -57,8 +84,8 @@ def addDict(at, phrase, posid):
     s = u''.join(map(lambda x: x.surface, phrase[0:-1]))
     sur = s + phrase[-1].surface
     ori = s + phrase[-1].origin
-    surfaceDict[(sur, posid)].append(at)
-    originDict[(ori, posid)].append(at)
+    surfaceDict[(posid, sur)].append(at)
+    originDict[(posid, ori)].append(at)
     return Word(sur,ori,posid)
 
 def init(maxReview=10):
@@ -71,8 +98,7 @@ def init(maxReview=10):
         doc = cPickle.load(file)
         file.close()
     else:
-        selected = [u'Macノート',u'MP3プレーヤー',u'PDA',u'インク',u'カメラ',u'キーボード',u'コンタクトレンズ 1day',u'セキュリティソフト',u'チャイルドシート',u'テレビ',u'テレビリモコン',u'トースター',u'ドライバー',u'パソコン',u'パソコンゲーム',u'ヒーター・ストーブ',u'プリンタ',u'マッサージ器',u'ミシン',u'レンズ',u'冷蔵庫・冷凍庫',u'動画編集ソフト',u'地デジアンテナ',u'女性用シェーバー',u'掃除機',u'洗濯機',u'生ごみ処理機',u'自転車',u'電子ピアノ',u'香水']
-        for cid, (category, prods) in enumerate(product.iterAllProducts(minReviewCount=50, categoryFilter=selected)):
+        for cid, (category, prods) in enumerate(product.iterAllProducts(minReviewCount=50)):
             doc.append([])
             for pid, prod in enumerate(prods):
                 reviews = prod.getReviews(max=maxReview, htmlStyle=True)
@@ -82,6 +108,7 @@ def init(maxReview=10):
                     doc[-1][-1].append([])
                     for lid, morphs in enumerate(morphslist):
                         doc[-1][-1][-1].append([Word(m.surface,m.original(),m.posid) for m in morphs])
+        logging.log(logging.INFO, 'all product parsed')
         file = open('out/doc.pkl', 'wb')
         cPickle.dump(doc, file)
         file.close()
@@ -130,3 +157,6 @@ if __name__ == '__main__':
     import util
     util.initIO()
     init()
+    templates = getTemplates()
+    for p1, p2, yv in templates:
+        print ''.join(map(lambda x: x.surface, getWords(p1,p2))), yv
