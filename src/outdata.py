@@ -51,14 +51,19 @@ def products2text(products, category):
         print >>fout, '\n'.join(content)
         fout.close()
 
-def createRank(minReviewCount=0):
+def createRank(minReviewCount=0, minProductCount=0, onlyValidCategory=False):
     checkMkdir(RANK_DIR)
     for category, products in iterAllProducts(minReviewCount):
         ranking = []
-        for prod in products: ranking.append(unicode(prod))
-        fout = codecs.open(RANK_DIR+category+'_'+str(len(products))+'.txt', 'w', 'utf-8')
-        print >>fout, '\n'.join(ranking)
-        fout.close()
+        if len(products) < minProductCount: continue
+        for prod in products:
+            prodCategory = prod['CategoryName']
+            if onlyValidCategory and category != prodCategory.split('>')[-1]: break
+            ranking.append(unicode(prod)+'\t'+prodCategory)
+        else:
+            fout = codecs.open(RANK_DIR+category, 'w', 'utf-8')
+            print >>fout, str(len(products)) + '\n' + '\n'.join(ranking)
+            fout.close()
 
 def doAll(html=False):
     selected = [u'Macノート',u'MP3プレーヤー',u'PDA',u'インク',u'カメラ',u'キーボード',u'コンタクトレンズ 1day',u'セキュリティソフト',u'チャイルドシート',u'テレビ',u'テレビリモコン',u'トースター',u'ドライバー',u'パソコン',u'パソコンゲーム',u'ヒーター・ストーブ',u'プリンタ',u'マッサージ器',u'ミシン',u'レンズ',u'冷蔵庫・冷凍庫',u'動画編集ソフト',u'地デジアンテナ',u'女性用シェーバー',u'掃除機',u'洗濯機',u'生ごみ処理機',u'自転車',u'電子ピアノ',u'香水']
@@ -71,5 +76,5 @@ if __name__ == '__main__':
     prods = inputProducts(JSON_DIR+u'プリンタ_343.txt')
     products2html(prods)
     '''
-    #createRank(50)
-    doAll(html=True)
+    createRank(50, 20, True)
+    #doAll(html=True)
