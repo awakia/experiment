@@ -193,6 +193,25 @@ def init(maxReview=10):
 
     #for cid, pid, rid, lid, wid, word in iterDoc(): print unicode(word),
 
+def findCandidate(words, yv):
+    #before find
+    print ''.join(map(lambda x: x.origin, words[1:])), yv,
+    for cid,pid,rid,lid,wid in getPlaces(words[1:]):
+        wid -= len(words)-1
+        if wid >= 0:
+            cand = doc[cid][pid][rid][lid][wid]
+            print cand.origin,
+    print
+    #after find
+    print ''.join(map(lambda x: x.origin, words[:-1])), yv,
+    for cid,pid,rid,lid,wid in getPlaces(words[:-1]):
+        wid += 1
+        if wid < len(doc[cid][pid][rid][lid]):
+            cand = doc[cid][pid][rid][lid][wid]
+            print cand.origin,
+    print
+
+
 if __name__ == '__main__':
     import util
     util.initIO()
@@ -200,8 +219,9 @@ if __name__ == '__main__':
     templates = getTemplates()
     wordsSet = []
     for p1, p2, yv in templates:
-        wordsSet.append(getWords(p1,p2))
+        wordsSet.append((getWords(p1,p2), yv))
     wordsSet = set(wordsSet)
-    for words in wordsSet:
-        print ''.join(map(lambda x: x.origin, words)), yv, getPlaces(words)
+    for words, yv in wordsSet:
+        #print ''.join(map(lambda x: x.origin, words)), yv, getPlaces(words)
+        findCandidate(words, yv)
 
