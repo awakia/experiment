@@ -28,10 +28,15 @@ class Word:
     def __str__(self):
         return self.__unicode__().encode('unicode-escape')
     def __unicode__(self):
-        return self.surface+'[%d]'%self.posid
+        if USE_ORIGIN: return self.origin+'[%d]'%self.posid
+        else: return self.surface+'[%d]'%self.posid
     def __cmp__(self, other): # compare with pos and original form
         if cmp(self.posid, other.posid) != 0: return cmp(self.posid, other.posid)
-        return cmp(self.origin, other.origin)
+        if USE_ORIGIN: return cmp(self.origin, other.origin)
+        else: return cmp(self.surface, other.surface)
+    def __hash__(self): # compare with pos and original form
+        if USE_ORIGIN: return hash(self.origin) + hash(self.posid)
+        else: return hash(self.surface) + hash(self.posid)
     def get(self):
         if USE_ORIGIN: return (self.posid, self.origin)
         else: return (self.posid, self.surface)
@@ -54,7 +59,7 @@ def getWords(p1, p2):
     if p1[:-1] != p2[:-1]: return 'ERORR'+str(p1)+'|'+str(p2)
     (cid, pid, rid, lid, wstart) = p1
     wend = p2[-1]+1
-    return [doc[cid][pid][rid][lid][wid] for wid in xrange(wstart,wend)]
+    return tuple([doc[cid][pid][rid][lid][wid] for wid in xrange(wstart,wend)])
 
 def getTemplates(spanMax=1, spanMin=0):
     positions = {}
@@ -110,7 +115,7 @@ def iterDoc():
 
 def addWordToDict(at, word):
     global phraseDict
-    phraseDict[word.get].append(at)
+    phraseDict[word.get()].append(at)
 
 def addPhraseToDict(at, phrase, posid):
     global phraseDict
@@ -193,7 +198,10 @@ if __name__ == '__main__':
     util.initIO()
     init()
     templates = getTemplates()
+    wordsSet = []
     for p1, p2, yv in templates:
-        words = getWords(p1,p2)
-        print ''.join(map(lambda x: x.surface, words)), yv, getPlaces(words)
+        wordsSet.append(getWords(p1,p2))
+    wordsSet = set(wordsSet)
+    for words in wordsSet:
+        print ''.join(map(lambda x: x.origin, words)), yv, getPlaces(words)
 
