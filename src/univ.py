@@ -28,8 +28,8 @@ class Word:
     def __str__(self):
         return self.__unicode__().encode('unicode-escape')
     def __unicode__(self):
-        if USE_ORIGIN: return self.origin+'[%d]'%self.posid
-        else: return self.surface+'[%d]'%self.posid
+        if USE_ORIGIN: return self.origin
+        else: return self.surface
     def __cmp__(self, other): # compare with pos and original form
         if cmp(self.posid, other.posid) != 0: return cmp(self.posid, other.posid)
         if USE_ORIGIN: return cmp(self.origin, other.origin)
@@ -101,7 +101,9 @@ def getPlaces(words):
                             del cand[i]
                     else:
                         del cand[i]
-        if v & 1: cand.append(1)
+        if v & 1:
+            if n == 1: ret.append(p)
+            else: cand.append(1)
         prevP = p
     return ret
 
@@ -195,33 +197,67 @@ def init(maxReview=10):
 
 def findCandidate(words, yv):
     #before find
-    print ''.join(map(lambda x: x.origin, words[1:])), yv,
-    for cid,pid,rid,lid,wid in getPlaces(words[1:]):
+    candY = []
+    templateY = words[1:]
+    for cid,pid,rid,lid,wid in getPlaces(templateY):
         wid -= len(words)-1
         if wid >= 0:
-            cand = doc[cid][pid][rid][lid][wid]
-            print cand.origin,
-    print
-    #after find
-    print ''.join(map(lambda x: x.origin, words[:-1])), yv,
+            candY.append(doc[cid][pid][rid][lid][wid])
+    candV = []
+    templateV = words[:-1]
     for cid,pid,rid,lid,wid in getPlaces(words[:-1]):
         wid += 1
         if wid < len(doc[cid][pid][rid][lid]):
-            cand = doc[cid][pid][rid][lid][wid]
-            print cand.origin,
-    print
+            candV.append(doc[cid][pid][rid][lid][wid])
 
+    if yv == 'vy':
+        candY, candV = candV, candY
+        templateY, templateV = templateV, templateY
+
+    scoreY = 0.0
+    for cy in candY:
+        if cy.get() in dictY:
+            scoreY += 1
+    scoreY /= len(candY)+1
+    scoreV = 0.0
+    for cv in candV:
+        if cv.get() in dictV:
+            scoreV += 1
+    scoreV /= len(candV)+1
+    return (scoreY, templateY, tuple(candY)), (scoreV, templateV, tuple(candV))
 
 if __name__ == '__main__':
-    import util
+    import util, math
     util.initIO()
     init()
-    templates = getTemplates()
+    templates = getTemplates(spanMax=2, spanMin=1)
     wordsSet = []
     for p1, p2, yv in templates:
         wordsSet.append((getWords(p1,p2), yv))
     wordsSet = set(wordsSet)
+    candY = []
+    candV = []
     for words, yv in wordsSet:
-        #print ''.join(map(lambda x: x.origin, words)), yv, getPlaces(words)
-        findCandidate(words, yv)
+        #print ''.join(map(unicode, words)), yv, getPlaces(words)
+        cands = findCandidate(words, yv)
+        candY.append(cands[0])
+        candV.append(cands[1])
+    tobeY = defaultdict(float)
+    tobeV = defaultdict(float)
+    for score, template, cys in sorted(set(candY), reverse=True):
+        print score, ''.join(map(unicode, template)), repr(cys).decode('unicode-escape')
+        for cy in cys:
+            tobeY[cy] = min(math.log(score), tobeY[cy])
+    print
+    for score, template, cvs in sorted(set(candV), reverse=True):
+        print score, ''.join(map(unicode, template)), repr(cvs).decode('unicode-escape')
+        for cv in cvs:
+            tobeV[cv] = min(math.log(score), tobeV[cv])
+    print
+    for y, score in sorted(tobeY.iteritems(), key=lambda x:x[1], reverse=True):
+        print unicode(y), score
+    print
+    for v, score in sorted(tobeV.iteritems(), key=lambda x:x[1], reverse=True):
+        print unicode(v), score
+
 
