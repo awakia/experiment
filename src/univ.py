@@ -5,6 +5,7 @@ Created on 2011/01/17
 
 @author: aikawa
 '''
+from math import log
 from collections import defaultdict
 from util import pairwise
 import logging
@@ -14,6 +15,8 @@ phraseDict = defaultdict(list) #origin->[position]
 
 doc = [] #doc[categoryID][productID][reviewID][lineID][wordID]=word
 
+initialYMax = 10
+initialVMax = 10
 dictY = [(36,u'デザイン'),(36,u'機能'),(51,u'機能性'),(51,u'操作性'),(38,u'音'),(38,u'音質'),(51,u'使用感'),(38,u'液晶')]
 dictV = [(10,u'良い'),(36,u'満足'),(37,u'問題')]
 
@@ -126,17 +129,39 @@ def addPhraseToDict(at, phrase, posid):
     phraseDict[phrase.get()].append(at)
     return phrase
 
-def init(maxReview=10):
+def autoSeedFind():
+    import vocab
+    global dictY, dictV
+    dictY = []
+    dictV = []
+    words = defaultdict(int)
+    for d in iterDoc(): words[d[-1]] += 1
+    vocab = vocab.build()
+    for word, cnt in sorted(words.iteritems(), key=lambda x:float(x[1])/log(vocab.get(x[0].origin,2)), reverse=True):
+        g = vocab.get(word.origin,0)
+        if 0 < g < 200000000:
+            if len(dictY) < initialYMax and word.isNoun(): dictY.append(word.get())
+            if len(dictV) < initialVMax and word.isAdj(): dictV.append(word.get())
+            if len(dictY) == initialYMax and len(dictV) == initialVMax: break
+    print repr(dictY).decode('unicode-escape')
+    print repr(dictV).decode('unicode-escape')
+
+def init(maxReview=10, cidFilter=None):
     global doc
     import cPickle, os
     import product
     import wakachi
-    if os.path.exists('out/doc.pkl'):
-        file = open('out/doc.pkl', 'rb')
+    filename = 'out/doc'
+    if cidFilter is not None: filename += str(cidFilter)
+    filename += '.pkl'
+    if os.path.exists(filename):
+        file = open(filename, 'rb')
         doc = cPickle.load(file)
         file.close()
     else:
         for cid, (category, prods) in enumerate(product.iterAllProducts(minReviewCount=50)):
+            if cidFilter is not None and cid != cidFilter: continue
+            logging.log(logging.INFO, u'category:%s parsing' % category)
             doc.append([])
             for pid, prod in enumerate(prods):
                 reviews = prod.getReviews(max=maxReview, htmlStyle=True)
@@ -147,11 +172,13 @@ def init(maxReview=10):
                     for lid, morphs in enumerate(morphslist):
                         doc[-1][-1][-1].append([Word(m.surface,m.original(),m.posid) for m in morphs])
         logging.log(logging.INFO, 'all product parsed')
-        file = open('out/doc.pkl', 'wb')
+        file = open(filename, 'wb')
         cPickle.dump(doc, file)
         file.close()
 
     logging.log(logging.INFO, 'document input completed')
+
+    autoSeedFind()
 
     for cid, category in enumerate(doc):
         for pid, product in enumerate(category):
@@ -230,9 +257,9 @@ def findCandidate(words, yv, uniqueFlag=True):
     return (scoreY, templateY, tuple(candY)), (scoreV, templateV, tuple(candV))
 
 if __name__ == '__main__':
-    import util, math
+    import util
     util.initIO()
-    init()
+    init(cidFilter=0)
     templates = getTemplates(spanMax=2, spanMin=1)
     wordsSet = []
     for p1, p2, yv in templates:
