@@ -195,7 +195,7 @@ def init(maxReview=10):
 
     #for cid, pid, rid, lid, wid, word in iterDoc(): print unicode(word),
 
-def findCandidate(words, yv):
+def findCandidate(words, yv, uniqueFlag=True):
     #before find
     candY = []
     templateY = words[1:]
@@ -210,6 +210,9 @@ def findCandidate(words, yv):
         if wid < len(doc[cid][pid][rid][lid]):
             candV.append(doc[cid][pid][rid][lid][wid])
 
+    if uniqueFlag:
+        candY = set(candY)
+        candV = set(candV)
     if yv == 'vy':
         candY, candV = candV, candY
         templateY, templateV = templateV, templateY
@@ -235,29 +238,24 @@ if __name__ == '__main__':
     for p1, p2, yv in templates:
         wordsSet.append((getWords(p1,p2), yv))
     wordsSet = set(wordsSet)
-    candY = []
-    candV = []
+    candYV = []
     for words, yv in wordsSet:
         #print ''.join(map(unicode, words)), yv, getPlaces(words)
         cands = findCandidate(words, yv)
-        candY.append(cands[0])
-        candV.append(cands[1])
-    tobeY = defaultdict(float)
-    tobeV = defaultdict(float)
-    for score, template, cys in sorted(set(candY), reverse=True):
-        print score, ''.join(map(unicode, template)), repr(cys).decode('unicode-escape')
-        for cy in cys:
-            tobeY[cy] = min(math.log(score), tobeY[cy])
-    print
-    for score, template, cvs in sorted(set(candV), reverse=True):
-        print score, ''.join(map(unicode, template)), repr(cvs).decode('unicode-escape')
-        for cv in cvs:
-            tobeV[cv] = min(math.log(score), tobeV[cv])
-    print
-    for y, score in sorted(tobeY.iteritems(), key=lambda x:x[1], reverse=True):
-        print unicode(y), score
-    print
-    for v, score in sorted(tobeV.iteritems(), key=lambda x:x[1], reverse=True):
-        print unicode(v), score
-
-
+        candYV.append(cands)
+    tobeYV = [{},{}]
+    for i, cand in enumerate(zip(*candYV)):
+        for score, template, vals in sorted(set(cand), reverse=True):
+            print score, ''.join(map(unicode, template)), repr(vals).decode('unicode-escape')
+            score *= 2 #2 is magic number
+            if score > 1: score = 1.0
+            for val in vals:
+                if val in tobeYV[i]:
+                    tobeYV[i][val] = tobeYV[i][val] * score / (tobeYV[i][val] * score + (1-tobeYV[i][val]) * (1-score))
+                else:
+                    tobeYV[i][val] = score
+        print
+    for i in xrange(2):
+        for val, score in sorted(tobeYV[i].iteritems(), key=lambda x:x[1], reverse=True):
+            print unicode(val), score
+        print
