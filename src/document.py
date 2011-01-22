@@ -99,17 +99,9 @@ def combineDoc(doc):
                             while w < len(line) and line[w].isNoun(): w += 1
                             combined[-1][-1][-1][-1].append(toPhrase(line[wid:w], line[w-1].posid))
                             wid = w
-                        elif line[wid].isAdj() or line[wid].isAdv(): #add as AdjPhrase
-                            w = wid + 1
-                            while w < len(line) and (line[w].isAdj() or line[w].isAdv()): w += 1
-                            if line[w-1].isAdj():
-                                if w < len(line) and line[w].posid == 57: #「重さ」など
-                                    w += 1
-                                    combined[-1][-1][-1][-1].append(toPhrase(line[wid:w], line[w-1].posid))
-                                wid = w
-                            else:
-                                combined[-1][-1][-1][-1].append(line[wid])
-                                wid += 1
+                        elif wid+1 < len(line) and line[wid].isAdj() and line[wid+1].posid == 57: #「重さ」など
+                            combined[-1][-1][-1][-1].append(toPhrase(line[wid:wid+2], 38))
+                            wid += 2
                         else:
                             combined[-1][-1][-1][-1].append(line[wid])
                             wid += 1
@@ -117,5 +109,5 @@ def combineDoc(doc):
     logging.log(logging.INFO, 'combine completed')
     return combined
 
-RAW_DOC = initDoc(targetCID=60) #doc[categoryID][productID][reviewID][lineID][wordID]=word
+RAW_DOC = initDoc(targetCID=None) #doc[categoryID][productID][reviewID][lineID][wordID]=word
 DOC = combineDoc(RAW_DOC)
