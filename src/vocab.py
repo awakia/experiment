@@ -16,13 +16,13 @@ def build(filename='data/1gm.txt'):
     print >>sys.stderr, 'vocab built!'
     return vocab
 
-def system(cmd, out_cmd=False):
+def system(cmd, out_cmd=True):
     if out_cmd: print '$', cmd
+    if type(cmd) is types.UnicodeType: cmd = cmd.encode('utf-8')
     res = os.popen(cmd).read()
     return res
 
 def googleNgram(keyword, user='aikawa', host='133.9.238.116', index_dir='/work/googlengram/index/'):
-    if type(keyword) is types.UnicodeType: keyword = keyword.encode('utf-8')
     command = 'ssh %s@%s "echo %s | ssgnc-search --ssgnc-order=FIXED %s"' % (user, host, keyword, index_dir)
     res = system(command)
     v = res.split()
