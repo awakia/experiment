@@ -40,3 +40,7 @@ class Word:
     def isAdv(self): return 34 <= self.posid <= 35 #副詞
     def isNoun(self): return 36 <= self.posid <= 67 and self.posid != 40 #名詞
     def isPrenoun(self): return self.posid == 68 #連体詞
+    def willBeEntry(self):
+        return self.isNoun()
+    def willBeValue(self):
+        return self.isAdj() or (self.isNoun() and not (self.posid==38 and self.surface[-1] == u'さ'))
