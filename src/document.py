@@ -4,6 +4,7 @@
 @author: aikawa
 '''
 import logging
+import product
 from word import Word
 
 def getWord(position):
@@ -25,34 +26,40 @@ def iterDoc(targetCID=None):
                     for wid, word in enumerate(line):
                         yield cid, pid, rid, lid, wid, word
 
-def initDoc(maxReview=10, targetCID=None, createNew=False):
+def toDocForm(prods, maxReview=10):
+    import wakachi
+    ret = []
+    for prod in prods:
+        reviews = prod.getReviews(max=maxReview, htmlStyle=True)
+        ret.append([])
+        for review in reviews:
+            morphslist = wakachi.parseLine(review, '<br />')
+            ret[-1].append([])
+            for morphs in morphslist:
+                ret[-1][-1].append([Word(m.surface,m.original(),m.posid) for m in morphs])
+
+def tryToLoadProds(cid, createNew=False):
     import cPickle, os
-    filename = 'out/doc'
-    if targetCID is not None: filename += str(targetCID)
-    filename += '.pkl'
+    filename = 'out/categ%d.pkl' % cid
     if not createNew and os.path.exists(filename):
         file = open(filename, 'rb')
-        doc = cPickle.load(file)
+        prods = cPickle.load(file)
         file.close()
+        return prods
     else:
-        import wakachi, product
-        doc = []
-        for cid, (category, prods) in enumerate(product.iterAllProducts(minReviewCount=50)):
-            if targetCID is not None and cid != targetCID: continue
-            logging.log(logging.INFO, u'category:%s parsing' % category)
-            doc.append([])
-            for pid, prod in enumerate(prods):
-                reviews = prod.getReviews(max=maxReview, htmlStyle=True)
-                doc[-1].append([])
-                for rid, review in enumerate(reviews):
-                    morphslist = wakachi.parseLine(review, '<br />')
-                    doc[-1][-1].append([])
-                    for lid, morphs in enumerate(morphslist):
-                        doc[-1][-1][-1].append([Word(m.surface,m.original(),m.posid) for m in morphs])
-        logging.log(logging.INFO, 'all product parsed')
+        prods = toDocForm(product.getProducts(cid, minReviewCount=50)[1])
         file = open(filename, 'wb')
-        cPickle.dump(doc, file)
+        cPickle.dump(prods, file)
         file.close()
+        return prods
+
+def initDoc(maxReview=10, targetCID=None, createNew=False):
+    if targetCID is not None:
+        doc = [tryToLoadProds(targetCID, createNew)]
+    else:
+        doc = []
+        for cid, ls in enumerate(product.getCategoryList(minReviewCount=50)):
+            doc.append(tryToLoadProds(cid, createNew))
     logging.log(logging.INFO, 'document input completed. categorySize=' + str(len(doc)))
     return doc
 
@@ -112,5 +119,5 @@ def combineDoc(doc):
     logging.log(logging.INFO, 'combine completed')
     return combined
 
-RAW_DOC = initDoc(targetCID=None) #doc[categoryID][productID][reviewID][lineID][wordID]=word
+RAW_DOC = initDoc(targetCID=None, createNew=True) #doc[categoryID][productID][reviewID][lineID][wordID]=word
 DOC = combineDoc(RAW_DOC)
