@@ -7,6 +7,8 @@ import logging
 import product
 from word import Word
 
+TARGET_CID=None
+
 def getWord(position):
     (cid, pid, rid, lid, wid) = position
     return DOC[cid][pid][rid][lid][wid]
@@ -69,7 +71,7 @@ def toPhrase(words, posid):
     phrase = Word(s+words[-1].surface, s+words[-1].origin, posid)
     return phrase
 
-def combineDoc(doc):
+def combineDoc(doc, combineLine=False):
     combined = []
     for category in doc:
         combined.append([])
@@ -90,7 +92,6 @@ def combineDoc(doc):
                         else:
                             combined[-1][-1][-1][-1].append(line[wid])
                             wid += 1
-
     logging.log(logging.INFO, 'pre-combine completed')
 
     doc = combined
@@ -116,9 +117,24 @@ def combineDoc(doc):
                         else:
                             combined[-1][-1][-1][-1].append(line[wid])
                             wid += 1
-
     logging.log(logging.INFO, 'combine completed')
+
+    if combineLine:
+        doc = combined
+        combined = []
+        for category in doc:
+            combined.append([])
+            for product in category:
+                combined[-1].append([])
+                for review in product:
+                    combined[-1][-1].append([[]])
+                    for line in review:
+                        if line == []:
+                            combined[-1][-1][-1].append([])
+                        else:
+                            combined[-1][-1][-1][-1] += line
+        logging.log(logging.INFO, 'line-combine completed')
     return combined
 
-RAW_DOC = initDoc(targetCID=None) #doc[categoryID][productID][reviewID][lineID][wordID]=word
-DOC = combineDoc(RAW_DOC)
+RAW_DOC = initDoc(targetCID=TARGET_CID) #doc[categoryID][productID][reviewID][lineID][wordID]=word
+DOC = combineDoc(RAW_DOC, combineLine=True)
