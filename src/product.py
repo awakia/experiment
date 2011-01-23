@@ -50,35 +50,46 @@ class Product:
 #JSON_DIR='kakakusmall/'
 JSON_DIR=u'kakaku1217/'
 
-def inputProducts(filename):
+def _inputProducts(filename):
     data = util.jsonLoad(filename)
     prods = [Product(x) for x in data]
     return prods
 
-def extractinfo(filename):
+def _extractinfo(filename):
     mo = re.match('(.*/)*?([^/]*)_(\d+).txt', filename)
     category = unicodedata.normalize('NFC', mo.groups()[-2])
     reviewcnt = int(mo.groups()[-1])
     return category, reviewcnt
 
-def iterAllProducts(minReviewCount=0, categoryFilter=None):
+def getCategoryList(minReviewCount=0, categoryFilter=None):
+    ret = []
     if SELECTED_FLAG and categoryFilter is None: categoryFilter = SELECTED
     for filename in glob.glob(JSON_DIR+u'/*.txt'):
         if u'category.txt' in filename: continue
-        category, reviewcnt = extractinfo(filename)
+        category, reviewcnt = _extractinfo(filename)
         if reviewcnt < minReviewCount: continue
         if categoryFilter is not None and category not in categoryFilter: continue
+        ret.append((filename, category, reviewcnt))
+    return ret
+
+def getProducts(index, minReviewCount=0, categoryFilter=None):
+    filename, category, reviewcnt = getCategoryList(minReviewCount, categoryFilter)[index]
+    logging.log(logging.INFO, category + ' ' + str(reviewcnt))
+    prods = _inputProducts(filename)
+    return category, prods
+
+def iterAllProducts(minReviewCount=0, categoryFilter=None):
+    for filename, category, reviewcnt in getCategoryList(minReviewCount, categoryFilter):
         logging.log(logging.INFO, category + ' ' + str(reviewcnt))
-        prods = inputProducts(filename)
+        prods = _inputProducts(filename)
         yield category, prods
 
-def iterAllScores(minReviewCount=0, categoryFilter=None):
-    for category, prods in iterAllProducts(minReviewCount=minReviewCount, categoryFilter=categoryFilter):
-        for i in xrange(len(prods)):
-            if len(prods[0]['Review']):
-                scores = map(lambda x: x[0], prods[0]['Review'][0]['scores'])
-                yield category, scores
-                break
+def getScores(index, minReviewCount=0, categoryFilter=None):
+    category, prods = getProducts(index, minReviewCount, categoryFilter)
+    for _ in xrange(len(prods)):
+        if len(prods[0]['Review']):
+            scores = map(lambda x: x[0], prods[0]['Review'][0]['scores'])
+            return category, scores
 
 if __name__ == '__main__':
     import json
