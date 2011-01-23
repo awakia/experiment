@@ -76,6 +76,9 @@ def combineDoc(doc):
                         if wid+1 < len(line) and line[wid].posid == 40 and line[wid+1].posid == 20: #「非常/に」など
                             combined[-1][-1][-1][-1].append(Word(line[wid].surface+line[wid+1].surface, line[wid].surface+line[wid+1].origin, 34))
                             wid += 2
+                        elif line[wid].posid == 12: #「～やすい、～ない」など
+                            combined[-1][-1][-1][-1][-1] += line[wid]
+                            wid += 2
                         else:
                             combined[-1][-1][-1][-1].append(line[wid])
                             wid += 1
