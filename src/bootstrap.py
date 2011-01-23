@@ -31,14 +31,13 @@ def findSeed(doc, targetCID):
     for word, cnt in sorted(words.iteritems(), key=lambda x:float(x[1])/log(vocab.get(x[0].origin,2)), reverse=True):
         g = vocab.get(word.origin,0)
         if 0 < g < 200000000:
-            if word.isAdj(): print unicode(word)
             if word.surface == '(': continue #huristics
             logging.log(logging.INFO, (u'word:%s[%d], cnt:%d, google-cnt:%d' % (word, word.posid, cnt, g)))
             if len(dictY) < initialYMax and word.isNoun(): dictY.append(word.get())
             if len(dictV) < initialVMax and word.isAdj(): dictV.append(word.get())
             if len(dictY) == initialYMax and len(dictV) == initialVMax: break
-    print repr(dictY).decode('unicode-escape')
-    print repr(dictV).decode('unicode-escape')
+    print 'seedY:', repr(dictY).decode('unicode-escape')
+    print 'seedV', repr(dictV).decode('unicode-escape')
     return set(dictY), set(dictV)
 
 def createPhraseDict(targetCID):
@@ -94,7 +93,7 @@ def getPlaces(words, phraseDict):
         prevP = p
     return ret
 
-def findCandidate(dictY, dictV, phraseDict, words, yv, posFilter=True, uniqueFlag=False):
+def findCandidate(dictY, dictV, phraseDict, words, yv, posFilter=True, uniqueFlag=True):
     #before find
     candY = []
     templateY = words[1:]
@@ -130,23 +129,23 @@ def findCandidate(dictY, dictV, phraseDict, words, yv, posFilter=True, uniqueFla
     scoreV /= len(candV)+1
     return (scoreY, templateY, tuple(candY)), (scoreV, templateV, tuple(candV))
 
-def calcTemplateScores(dictY, dictV, phraseDict, templates):
+def calcTemplateScores(dictY, dictV, phraseDict, templates, uniqueFlag=False):
     wordsSet = []
     for p1, p2, yv in templates:
         wordsSet.append((document.getWords(p1,p2), yv))
-    wordsSet = set(wordsSet)
+    if uniqueFlag: wordsSet = set(wordsSet)
     candYV = []
     for words, yv in wordsSet:
         cands = findCandidate(dictY, dictV, phraseDict, words, yv)
         candYV.append(cands)
     return candYV
 
-def calcYVScores(candYV):
+def calcYVScores(candYV, magic=1.5):
     tobeYV = [{},{}]
     for i, cand in enumerate(zip(*candYV)):
         for score, template, vals in sorted(set(cand), reverse=True):
             print score, ''.join(map(unicode, template)), repr(vals).decode('unicode-escape')
-            score *= 2 #2 is magic number
+            score *= magic
             if score > 1: score = 1.0
             for val in set(vals):
                 if val in tobeYV[i]:
@@ -162,20 +161,23 @@ def selectNextYV(tobeYV, thresh=0.5):
         for val, score in sorted(tobeYV[i].iteritems(), key=lambda x:x[1], reverse=True):
             if score >= thresh: nextYV[i].append(val.get())
             #print unicode(val), score
-        print
+        #print
     return set(nextYV[0]), set(nextYV[1])
 
-def bootstrap(maxLoop=2):
+def bootstrap(maxLoop=10):
     targetCID = None
     phraseDict = createPhraseDict(targetCID)
     dictY, dictV = findSeed(document.DOC, targetCID)
-    for _ in xrange(maxLoop):
-        templates = getTemplates(dictY, dictV, phraseDict, spanMax=2, spanMin=1)
+    for loop in xrange(maxLoop):
+        templates = getTemplates(dictY, dictV, phraseDict, spanMax=3, spanMin=1)
         candYV = calcTemplateScores(dictY, dictV, phraseDict, templates)
         tobeYV = calcYVScores(candYV)
         nextY, nextV = selectNextYV(tobeYV)
-        print repr(nextY).decode('unicode-escape')
-        print repr(nextV).decode('unicode-escape')
+        nextY -= dictY
+        nextV -= dictV
+        print '%d th additionalY'%(loop+1), repr(nextY).decode('unicode-escape')
+        print '%d th additionalV'%(loop+1), repr(nextV).decode('unicode-escape')
+        if not nextY and not nextV: break
         dictY |= nextY
         dictV |= nextV
     print repr(dictY).decode('unicode-escape')
