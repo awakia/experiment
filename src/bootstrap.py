@@ -5,14 +5,16 @@ Created on 2011/01/17
 
 @author: aikawa
 '''
+import logging
+#logging.basicConfig(level=logging.INFO)
 from math import log
 from collections import defaultdict
 from util import pairwise
 from optparse import OptionParser
 import document
+import product
 import sys
 import codecs
-import logging
 logging.basicConfig(level=logging.DEBUG)
 
 initialYMax = 10
@@ -200,5 +202,6 @@ if __name__ == '__main__':
     oparser.add_option('-l', '--max_loop', dest='maxLoop', metavar='NUM', type='int', default=10, help='indicete maximum loop number.')
     opts, args = oparser.parse_args()
     for cid in xrange(len(document.DOC)):
-        print 'Category:', cid
-        bootstrap(opts, cid)
+        print 'Category:', cid, product.SELECTED[cid]
+        dictY, dictV = bootstrap(opts, cid)
+

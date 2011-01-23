@@ -37,6 +37,7 @@ def toDocForm(prods, maxReview=10):
             ret[-1].append([])
             for morphs in morphslist:
                 ret[-1][-1].append([Word(m.surface,m.original(),m.posid) for m in morphs])
+    return ret
 
 def tryToLoadProds(cid, createNew=False):
     import cPickle, os
@@ -119,5 +120,5 @@ def combineDoc(doc):
     logging.log(logging.INFO, 'combine completed')
     return combined
 
-RAW_DOC = initDoc(targetCID=None, createNew=True) #doc[categoryID][productID][reviewID][lineID][wordID]=word
+RAW_DOC = initDoc(targetCID=None) #doc[categoryID][productID][reviewID][lineID][wordID]=word
 DOC = combineDoc(RAW_DOC)
