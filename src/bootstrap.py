@@ -8,8 +8,10 @@ Created on 2011/01/17
 from math import log
 from collections import defaultdict
 from util import pairwise
-from document import Word
+from optparse import OptionParser
 import document
+import sys
+import codecs
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -19,7 +21,7 @@ seedDictY = [(36,u'デザイン'),(36,u'機能'),(51,u'機能性'),(51,u'操作�
 seedDictV = [(10,u'良い'),(36,u'満足'),(37,u'問題')]
 
 
-def findSeed(doc, targetCID):
+def findSeed(targetCID):
     import vocab
     dictY = []
     dictV = []
@@ -144,7 +146,7 @@ def calcYVScores(candYV, magic=1.5):
     tobeYV = [{},{}]
     for i, cand in enumerate(zip(*candYV)):
         for score, template, vals in sorted(set(cand), reverse=True):
-            print score, ''.join(map(unicode, template)), repr(vals).decode('unicode-escape')
+            #print score, ''.join(map(unicode, template)), repr(vals).decode('unicode-escape')
             score *= magic
             if score > 1: score = 1.0
             for val in set(vals):
@@ -152,7 +154,7 @@ def calcYVScores(candYV, magic=1.5):
                     tobeYV[i][val] = tobeYV[i][val] * score / (tobeYV[i][val] * score + (1-tobeYV[i][val]) * (1-score))
                 else:
                     tobeYV[i][val] = score
-        print
+        #print
     return tobeYV
 
 def selectNextYV(tobeYV, thresh=0.5):
@@ -164,12 +166,14 @@ def selectNextYV(tobeYV, thresh=0.5):
         #print
     return set(nextYV[0]), set(nextYV[1])
 
-def bootstrap(maxLoop=10):
-    targetCID = None
+def bootstrap(opts, targetCID=None):
+    if opts.outfile: out = codecs.open(opts.outfile, 'w', 'utf-8')
+    else: out = sys.stdout
+
     phraseDict = createPhraseDict(targetCID)
-    dictY, dictV = findSeed(document.DOC, targetCID)
-    for loop in xrange(maxLoop):
-        templates = getTemplates(dictY, dictV, phraseDict, spanMax=3, spanMin=1)
+    dictY, dictV = findSeed(targetCID)
+    for loop in xrange(opts.maxLoop):
+        templates = getTemplates(dictY, dictV, phraseDict, spanMax=3, spanMin=0)
         candYV = calcTemplateScores(dictY, dictV, phraseDict, templates)
         tobeYV = calcYVScores(candYV)
         nextY, nextV = selectNextYV(tobeYV)
@@ -180,11 +184,21 @@ def bootstrap(maxLoop=10):
         if not nextY and not nextV: break
         dictY |= nextY
         dictV |= nextV
-    print repr(dictY).decode('unicode-escape')
-    print repr(dictV).decode('unicode-escape')
+    print >>out, repr(dictY).decode('unicode-escape')
+    print >>out, repr(dictV).decode('unicode-escape')
+    print >>out
+
+    if opts.outfile: out.close()
+
     return dictY, dictV
 
 if __name__ == '__main__':
     import util
     util.initIO()
-    bootstrap()
+    oparser = OptionParser('%prog [OPTIONS]')
+    oparser.add_option('-o', '--outfile', dest='outfile', metavar='FILE', help='write.output to FILE')
+    oparser.add_option('-l', '--max_loop', dest='maxLoop', metavar='NUM', type='int', default=10, help='indicete maximum loop number.')
+    opts, args = oparser.parse_args()
+    for cid in xrange(len(document.DOC)):
+        print 'Category:', cid
+        bootstrap(opts, cid)
