@@ -26,6 +26,8 @@ class Word:
     def __hash__(self): # compare with pos and original form
         if USE_ORIGIN: return hash(self.origin) + hash(self.posid)
         else: return hash(self.surface) + hash(self.posid)
+    def __add__(self, other):
+        return Word(self.surface+other.surface, self.surface+other.origin, other.posid)
     def get(self):
         if USE_ORIGIN: return (self.posid, self.origin)
         else: return (self.posid, self.surface)
