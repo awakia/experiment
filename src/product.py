@@ -83,12 +83,13 @@ def iterAllProducts(minReviewCount=0, categoryFilter=None):
         prods = _inputProducts(filename)
         yield category, prods
 
-def getScores(index, minReviewCount=0, categoryFilter=None):
+def getEntries(index, minReviewCount=0, categoryFilter=None):
     category, prods = getProducts(index, minReviewCount, categoryFilter)
-    for _ in xrange(len(prods)):
-        if len(prods[0]['Review']):
-            scores = map(lambda x: x[0], prods[0]['Review'][0]['scores'])
-            return category, scores
+    for prod in prods:
+        if len(prod['Review']):
+            entries = map(lambda x: x[0], prod['Review'][0]['scores'])
+            return entries[:-1] # 最後の一つは「満足度」なので除外
+    print 'error'
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
