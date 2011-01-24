@@ -7,7 +7,8 @@ import logging
 import product
 from word import Word
 
-TARGET_CID=None
+TARGET_CID=45
+PKL_FILE='out/categ%d.pkl'
 
 def getWord(position):
     (cid, pid, rid, lid, wid) = position
@@ -43,7 +44,7 @@ def toDocForm(prods, maxReview=10):
 
 def tryToLoadProds(cid, createNew=False):
     import cPickle, os
-    filename = 'out/categ%d.pkl' % cid
+    filename = PKL_FILE % cid
     if not createNew and os.path.exists(filename):
         file = open(filename, 'rb')
         prods = cPickle.load(file)
@@ -86,7 +87,7 @@ def combineDoc(doc, combineLine=False):
                         if wid+1 < len(line) and line[wid].posid == 40 and line[wid+1].posid == 20: #「非常/に」など
                             combined[-1][-1][-1][-1].append(Word(line[wid].surface+line[wid+1].surface, line[wid].surface+line[wid+1].origin, 34))
                             wid += 2
-                        elif line[wid].posid == 12: #「～やすい、～ない」など
+                        elif 11 <= line[wid].posid <= 12: #形容接尾語「～っぽい」形容非自立「～やすい、～ない」など
                             combined[-1][-1][-1][-1][-1] += line[wid]
                             wid += 2
                         else:
