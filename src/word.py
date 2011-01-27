@@ -29,13 +29,13 @@ class Word:
     def __add__(self, other):
         return Word(self.surface+other.surface, self.surface+other.origin, other.posid)
     def get(self):
-        #if USE_ORIGIN: return (self.posid, self.origin)
-        #else: return (self.posid, self.surface)
-        if USE_ORIGIN: return self.origin
-        else: return self.surface
+        if USE_ORIGIN: return (self.posid, self.origin)
+        else: return (self.posid, self.surface)
+        #if USE_ORIGIN: return self.origin
+        #else: return self.surface
     def feature(self):
         return Word.POS_LIST[self.posid]
-    def isAdj(self): return 10 <= self.posid <= 12 or self.posid == 40 #形容詞
+    def isAdj(self): return 10 <= self.posid <= 12 or self.posid == 40 #形容詞, 形容動詞語幹
     def isPart(self): return 13 <= self.posid <= 24 #助詞
     def isAuxverb(self): return self.posid == 25 #助動詞
     def isConj(self): return self.posid == 26 #接続詞
@@ -46,6 +46,6 @@ class Word:
     def isIndependentNoun(self): return 36 <= self.posid <= 47 #名詞(代名詞・接尾・非自立を除く)
     def isPrenoun(self): return self.posid == 68 #連体詞
     def willBeEntry(self):
-        return self.isNoun()
+        return self.isIndependentNoun() and self.posid != 40
     def willBeValue(self):
-        return self.isAdj() or (self.isNoun() and not (self.posid==38 and self.surface[-1] == u'さ'))
+        return self.isAdj() or (self.isIndependentNoun() and not (self.posid==38 and self.surface[-1] == u'さ'))

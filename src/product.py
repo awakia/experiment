@@ -94,6 +94,14 @@ def getEntries(index, minReviewCount=0, categoryFilter=None):
     print 'error at getEntries', category, prods
     return None
 
+
+def getCategoryName(cid):
+    return getProducts(cid)[0]
+
+def getProductNames(cid):
+    prods = getProducts(cid)[1]
+    return [unicode(prod) for prod in prods]
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     import json

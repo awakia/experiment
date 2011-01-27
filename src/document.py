@@ -86,14 +86,19 @@ def combineDoc(doc, combineLine=False):
                     while wid < len(line):
                         if wid+1 < len(line) and line[wid].posid == 40 and line[wid+1].posid == 20: #「非常/に」など
                             combined[-1][-1][-1][-1].append(Word(line[wid].surface+line[wid+1].surface, line[wid].surface+line[wid+1].origin, 34))
-                            wid += 2
+                            wid += 1
                         elif 11 <= line[wid].posid <= 12: #形容接尾語「～っぽい」形容非自立「～やすい、～ない」など
                             combined[-1][-1][-1][-1][-1] += line[wid]
                             combined[-1][-1][-1][-1][-1].posid = 10 #形容詞-自立
-                            wid += 2
+                        elif 50 <= line[wid].posid <= 58: #名詞接尾語「機能/性」「重/さ」など
+                            try:
+                                combined[-1][-1][-1][-1][-1] += line[wid]
+                                combined[-1][-1][-1][-1][-1].posid = 38 #名詞-一般
+                            except IndexError:
+                                combined[-1][-1][-1][-1].append(line[wid])
                         else:
                             combined[-1][-1][-1][-1].append(line[wid])
-                            wid += 1
+                        wid += 1
     logging.log(logging.INFO, 'pre-combine completed')
 
     doc = combined
@@ -110,12 +115,12 @@ def combineDoc(doc, combineLine=False):
                     while wid < len(line):
                         if line[wid].isNoun() or line[wid].isPre(): #add as NounPhrase
                             w = wid + 1
-                            while w < len(line) and line[w].isNoun(): w += 1
-                            combined[-1][-1][-1][-1].append(toPhrase(line[wid:w], 38)) #名詞-一般
+                            phrase_posid = line[w-1].posid
+                            while w < len(line) and line[w].isNoun():
+                                w += 1
+                                phrase_posid = 38 #名詞一般
+                            combined[-1][-1][-1][-1].append(toPhrase(line[wid:w], phrase_posid))
                             wid = w
-                        elif wid+1 < len(line) and line[wid].isAdj() and line[wid+1].posid == 57: #「重さ」など
-                            combined[-1][-1][-1][-1].append(toPhrase(line[wid:wid+2], 38)) #名詞-一般
-                            wid += 2
                         else:
                             combined[-1][-1][-1][-1].append(line[wid])
                             wid += 1

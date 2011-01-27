@@ -24,10 +24,10 @@ seedDictY = [(36,u'デザイン'),(36,u'機能'),(51,u'機能性'),(51,u'操作�
 seedDictV = [(10,u'良い'),(36,u'満足'),(37,u'問題')]
 
 
-def findSeed(targetCID, useTfIdf=True):
+def findSeed(targetCID, useTfIdf=True, categoryName=''):
     import vocab
-    dictY = []
-    dictV = []
+    seedY = []
+    seedV = []
     words = defaultdict(int)
     for d in document.iterDoc(targetCID):
         words[d[-1]] += 1
@@ -38,14 +38,16 @@ def findSeed(targetCID, useTfIdf=True):
     for word, cnt in sorted(words.iteritems(), key=sortfunc, reverse=True):
         g = vocab.get(word.origin,0)
         if 0 < g < 200000000:
-            if word.surface == '(': continue #huristics
+            if word.surface == '(': #posid=36なので品詞で取り除けない
+                continue #huristics
             logging.log(logging.INFO, (u'word:%s[%d], cnt:%d, google-cnt:%d' % (word, word.posid, cnt, g)))
-            if len(dictY) < initialYMax and word.isIndependentNoun() and word.posid != 40 : dictY.append(word.get())
-            if len(dictV) < initialVMax and word.isAdj(): dictV.append(word.get())
-            if len(dictY) == initialYMax and len(dictV) == initialVMax: break
-    print 'seedY:', repr(dictY).decode('unicode-escape')
-    print 'seedV:', repr(dictV).decode('unicode-escape')
-    return set(dictY), set(dictV)
+            if word.origin in categoryName: continue #huristics
+            if len(seedY) < initialYMax and word.willBeEntry(): seedY.append(word.get())
+            if len(seedV) < initialVMax and word.isAdj(): seedV.append(word.get())
+            if len(seedY) == initialYMax and len(seedV) == initialVMax: break
+    print 'seedY:', repr(seedY).decode('unicode-escape')
+    print 'seedV:', repr(seedV).decode('unicode-escape')
+    return seedY, seedV
 
 def createPhraseDict(targetCID):
     phraseDict = defaultdict(list)
@@ -100,7 +102,9 @@ def getPlaces(words, phraseDict):
         prevP = p
     return ret
 
-def findCandidate(dictY, dictV, phraseDict, words, yv, posFilter=True, uniqueFlag=True):
+def findCandidate(dictY, dictV, phraseDict, words, yv, categoryName='', posFilter=True, uniqueFlag=True):
+    T_INIT = 0.01
+    F_INIT = 1
     #before find
     candY = []
     templateY = words[1:]
@@ -121,32 +125,34 @@ def findCandidate(dictY, dictV, phraseDict, words, yv, posFilter=True, uniqueFla
         candY, candV = candV, candY
         templateY, templateV = templateV, templateY
         originalY, originalV = originalV, originalY
+    candY = filter(lambda x: x.origin not in categoryName, candY)
+    candV = filter(lambda x: x.origin not in categoryName, candV)
     if posFilter:
         candY = filter(lambda x: x.willBeEntry(), candY)
         candV = filter(lambda x: x.willBeValue(), candV)
     if uniqueFlag:
         candY = set(candY)
         candV = set(candV)
-    scoreY = 0.0
+    scoreY = T_INIT
     for cy in candY:
         if cy.get() in dictY:
             scoreY += 1
-    scoreY /= len(candY)+1
-    scoreV = 0.0
+    scoreY /= len(candY)+F_INIT
+    scoreV = T_INIT
     for cv in candV:
         if cv.get() in dictV:
             scoreV += 1
-    scoreV /= len(candV)+1
+    scoreV /= len(candV)+F_INIT
     return (scoreY, templateY, tuple(candY), originalY), (scoreV, templateV, tuple(candV), originalV)
 
-def calcTemplateScores(dictY, dictV, phraseDict, templates, uniqueFlag=False):
+def calcTemplateScores(dictY, dictV, phraseDict, templates, uniqueFlag=False, categoryName=''):
     wordsSet = []
     for p1, p2, yv in templates:
         wordsSet.append((document.getWords(p1,p2), yv))
     if uniqueFlag: wordsSet = set(wordsSet)
     candYV = []
     for words, yv in wordsSet:
-        cands = findCandidate(dictY, dictV, phraseDict, words, yv)
+        cands = findCandidate(dictY, dictV, phraseDict, words, yv, categoryName=categoryName)
         candYV.append(cands)
     return candYV
 
@@ -174,13 +180,14 @@ def selectNextYV(tobeYV, thresh=0.5):
         #print
     return set(nextYV[0]), set(nextYV[1])
 
-def bootstrap(opts, targetCID=None, result=None):
+def bootstrap(opts, targetCID=None, categoryName='', result=None):
     phraseDict = createPhraseDict(targetCID)
-    dictY, dictV = findSeed(targetCID, opts.tfidf)
-    print >>result, u' '.join(map(lambda x:unicode(x[1]), sorted(dictY, key=lambda x:x[1], reverse=True)))
+    seedY, seedV = findSeed(targetCID, useTfIdf=opts.tfidf, categoryName=categoryName)
+    print >>result, u' '.join(map(lambda x:unicode(x[1]), seedY))
+    dictY, dictV = set(seedY), set(seedV)
     for loop in xrange(opts.maxLoop):
         templates = getTemplates(dictY, dictV, phraseDict, spanMax=3, spanMin=0)
-        candYV = calcTemplateScores(dictY, dictV, phraseDict, templates)
+        candYV = calcTemplateScores(dictY, dictV, phraseDict, templates, categoryName=categoryName)
         tobeYV = calcYVScores(candYV, opts.want)
         nextY, nextV = selectNextYV(tobeYV)
         nextY -= dictY
@@ -227,10 +234,10 @@ def findEachYV(dictY, dictV, targetCID=None, minEachReview=1):
         Data.append([]); Found.append([])
         rank = [defaultdict(int), defaultdict(int)]
         for pid, product in enumerate(category):
-            if len(product) < minEachReview:
-                Data[-1].append([]); Found[-1].append([])
-                continue
             data = defaultdict(list); found = [[],[]]
+            if len(product) < minEachReview:
+                Data[-1].append(data); Found[-1].append(found)
+                continue
             for rid, review in enumerate(product):
                 for lid, line in enumerate(review):
                     for wid, word in enumerate(line):
@@ -250,7 +257,7 @@ def findEachYV(dictY, dictV, targetCID=None, minEachReview=1):
             for i, f in enumerate(found):
                 for x in set(f):
                     rank[i][x] += 1
-            Data[-1].append(dict(data)); Found[-1].append(found)
+            Data[-1].append(data); Found[-1].append(found)
         Rank.append([list(sorted(r.iteritems(), key=lambda x:x[1], reverse=True)) for r in rank])
     return Data, Found, Rank
 
@@ -265,16 +272,30 @@ def evaluateCoverage(cid, dictY):
     coverage = float(covered)/len(entries)
     return coverage, entries
 
+def createTable(rank, data, cid=0):
+    ENTRY_SIZE = 10
+    entries = [x[0] for x in rank[cid][0][:ENTRY_SIZE]]
+    contents = []
+    for pid, pdata in enumerate(data[cid]):
+        contents.append([[] for _ in xrange(len(entries))])
+        for eid, entry in enumerate(entries):
+            contents[pid][eid] = pdata[entry]
+    return entries, contents
+
+
 def mainProc(opts, cid=None, out=None, result=None):
     if cid is None:
         targetCID = document.TARGET_CID
         cid = 0
     else:
         targetCID = cid
-    print 'Category-%d:'%targetCID, product.SELECTED[targetCID]
-    print >>result, product.SELECTED[targetCID]
 
-    dictY, dictV, correspondDict = bootstrap(opts, cid, result=result)
+    categoryName = product.getCategoryName(targetCID)
+
+    print 'Category-%d:'%targetCID, categoryName
+    print >>result, categoryName
+
+    dictY, dictV, correspondDict = bootstrap(opts, cid, categoryName=categoryName, result=result)
     print >>out, 'dictY', repr(dictY).decode('unicode-escape')
     print >>out, 'dictV', repr(dictV).decode('unicode-escape')
     print >>out, 'correspondDict', repr(correspondDict).decode('unicode-escape')
@@ -288,7 +309,16 @@ def mainProc(opts, cid=None, out=None, result=None):
     print >>out, 'coverage:', repr(coverage_ent).decode('unicode-escape')
     print
 
-    print >>result, u' '.join(map(lambda x:unicode(x[0]), rank[0][0][:10]))
+    entries, contents = createTable(rank, data)
+    #print >>result, u' '.join(map(lambda x:unicode(x[0]), rank[0][0][:10]))
+    print >>result, u'商品名\t' + u'\t'.join(map(unicode, entries))
+    prodNames = product.getProductNames(targetCID)
+    for pid, prodinfo in enumerate(contents):
+        row = prodNames[pid]
+        for value in prodinfo:
+            row += '\t' + ','.join(map(unicode, set(value)))
+        print >>result, row
+    print >>result
 
     return coverage_ent
 
