@@ -17,7 +17,7 @@ class Word:
     def __str__(self):
         return self.__unicode__().encode('unicode-escape')
     def __unicode__(self):
-        if USE_ORIGIN: return self.origin + str(self.posid)
+        if USE_ORIGIN: return self.origin
         else: return self.surface
     def __cmp__(self, other): # compare with pos and original form
         if cmp(self.posid, other.posid) != 0: return cmp(self.posid, other.posid)
@@ -29,8 +29,10 @@ class Word:
     def __add__(self, other):
         return Word(self.surface+other.surface, self.surface+other.origin, other.posid)
     def get(self):
-        if USE_ORIGIN: return (self.posid, self.origin)
-        else: return (self.posid, self.surface)
+        #if USE_ORIGIN: return (self.posid, self.origin)
+        #else: return (self.posid, self.surface)
+        if USE_ORIGIN: return self.origin
+        else: return self.surface
     def feature(self):
         return Word.POS_LIST[self.posid]
     def isAdj(self): return 10 <= self.posid <= 12 or self.posid == 40 #形容詞
@@ -40,7 +42,8 @@ class Word:
     def isPre(self): return 27 <= self.posid <= 30 #接頭詞
     def isVerb(self): return 31 <= self.posid <= 33 #動詞
     def isAdv(self): return 34 <= self.posid <= 35 #副詞
-    def isNoun(self): return 36 <= self.posid <= 58 #名詞(代名詞・非自立を除く)
+    def isNoun(self): return 36 <= self.posid <= 67 #名詞
+    def isIndependentNoun(self): return 36 <= self.posid <= 47 #名詞(代名詞・接尾・非自立を除く)
     def isPrenoun(self): return self.posid == 68 #連体詞
     def willBeEntry(self):
         return self.isNoun()

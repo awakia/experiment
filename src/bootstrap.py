@@ -40,7 +40,7 @@ def findSeed(targetCID, useTfIdf=True):
         if 0 < g < 200000000:
             if word.surface == '(': continue #huristics
             logging.log(logging.INFO, (u'word:%s[%d], cnt:%d, google-cnt:%d' % (word, word.posid, cnt, g)))
-            if len(dictY) < initialYMax and word.isNoun() and word.posid != 40 : dictY.append(word.get())
+            if len(dictY) < initialYMax and word.isIndependentNoun() and word.posid != 40 : dictY.append(word.get())
             if len(dictV) < initialVMax and word.isAdj(): dictV.append(word.get())
             if len(dictY) == initialYMax and len(dictV) == initialVMax: break
     print 'seedY:', repr(dictY).decode('unicode-escape')
@@ -174,9 +174,10 @@ def selectNextYV(tobeYV, thresh=0.5):
         #print
     return set(nextYV[0]), set(nextYV[1])
 
-def bootstrap(opts, targetCID=None):
+def bootstrap(opts, targetCID=None, result=None):
     phraseDict = createPhraseDict(targetCID)
     dictY, dictV = findSeed(targetCID, opts.tfidf)
+    print >>result, u' '.join(map(lambda x:unicode(x[1]), sorted(dictY, key=lambda x:x[1], reverse=True)))
     for loop in xrange(opts.maxLoop):
         templates = getTemplates(dictY, dictV, phraseDict, spanMax=3, spanMin=0)
         candYV = calcTemplateScores(dictY, dictV, phraseDict, templates)
@@ -264,18 +265,16 @@ def evaluateCoverage(cid, dictY):
     coverage = float(covered)/len(entries)
     return coverage, entries
 
-def mainProc(opts, cid=None):
-    if opts.outfile: out = codecs.open(opts.outfile, 'w', 'utf-8')
-    else: out = sys.stdout
-
+def mainProc(opts, cid=None, out=None, result=None):
     if cid is None:
         targetCID = document.TARGET_CID
         cid = 0
     else:
         targetCID = cid
     print 'Category-%d:'%targetCID, product.SELECTED[targetCID]
+    print >>result, product.SELECTED[targetCID]
 
-    dictY, dictV, correspondDict = bootstrap(opts, cid)
+    dictY, dictV, correspondDict = bootstrap(opts, cid, result=result)
     print >>out, 'dictY', repr(dictY).decode('unicode-escape')
     print >>out, 'dictV', repr(dictV).decode('unicode-escape')
     print >>out, 'correspondDict', repr(correspondDict).decode('unicode-escape')
@@ -289,12 +288,7 @@ def mainProc(opts, cid=None):
     print >>out, 'coverage:', repr(coverage_ent).decode('unicode-escape')
     print
 
-    if opts.outfile: out.close()
-
-    result = codecs.open('out/result_%s.txt'%optsStr(opts), 'w', 'utf-8')
-    print >>result, repr(rank[0][0]).decode('unicode-escape')
-    print >>result, repr(rank[0][1]).decode('unicode-escape')
-    result.close()
+    print >>result, u' '.join(map(lambda x:unicode(x[0]), rank[0][0][:10]))
 
     return coverage_ent
 
@@ -314,12 +308,18 @@ if __name__ == '__main__':
     oparser.add_option('-l', '--max_loop', dest='maxLoop', metavar='NUM', type='int', default=10, help='indicete maximum loop number.')
     oparser.add_option('-w', "--want", dest="want", metavar='VAL', type='float', default=2.0, help="use TF but TF-IDF")
     opts, args = oparser.parse_args()
+
+    if opts.outfile: out = codecs.open(opts.outfile, 'w', 'utf-8')
+    else: out = sys.stdout
+
+    result = codecs.open('out/result_%s.txt'%optsStr(opts), 'w', 'utf-8')
+
     if document.TARGET_CID is None:
         eval = codecs.open('out/eval_%s.txt'%optsStr(opts), 'w', 'utf-8')
         totalCoverage = 0.0
         sqTotalCoverage = 0.0
         for cid in xrange(len(document.DOC)):
-            coverage_ent = mainProc(opts, cid)
+            coverage_ent = mainProc(opts, cid, out=out, result=result)
             coverage = coverage_ent[0]
             totalCoverage += coverage
             sqTotalCoverage += coverage**2
@@ -330,5 +330,8 @@ if __name__ == '__main__':
         print >>eval, 'covarage avg:', totalCoverage, 'varaiance:', (sqTotalCoverage-totalCoverage**2)
         eval.close()
     else:
-        coverage_ent = mainProc(opts)
+        coverage_ent = mainProc(opts, out=out, result=result)
+
+    if opts.outfile: out.close()
+    result.close()
 

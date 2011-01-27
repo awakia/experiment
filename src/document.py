@@ -7,8 +7,8 @@ import logging
 import product
 from word import Word
 
-TARGET_CID=45
-PKL_FILE='out/categ%d.pkl'
+TARGET_CID=None
+PKL_FILE='out/filc%d.pkl'
 
 def getWord(position):
     (cid, pid, rid, lid, wid) = position
@@ -89,6 +89,7 @@ def combineDoc(doc, combineLine=False):
                             wid += 2
                         elif 11 <= line[wid].posid <= 12: #形容接尾語「～っぽい」形容非自立「～やすい、～ない」など
                             combined[-1][-1][-1][-1][-1] += line[wid]
+                            combined[-1][-1][-1][-1][-1].posid = 10 #形容詞-自立
                             wid += 2
                         else:
                             combined[-1][-1][-1][-1].append(line[wid])
@@ -110,10 +111,10 @@ def combineDoc(doc, combineLine=False):
                         if line[wid].isNoun() or line[wid].isPre(): #add as NounPhrase
                             w = wid + 1
                             while w < len(line) and line[w].isNoun(): w += 1
-                            combined[-1][-1][-1][-1].append(toPhrase(line[wid:w], line[w-1].posid))
+                            combined[-1][-1][-1][-1].append(toPhrase(line[wid:w], 38)) #名詞-一般
                             wid = w
                         elif wid+1 < len(line) and line[wid].isAdj() and line[wid+1].posid == 57: #「重さ」など
-                            combined[-1][-1][-1][-1].append(toPhrase(line[wid:wid+2], 38))
+                            combined[-1][-1][-1][-1].append(toPhrase(line[wid:wid+2], 38)) #名詞-一般
                             wid += 2
                         else:
                             combined[-1][-1][-1][-1].append(line[wid])
