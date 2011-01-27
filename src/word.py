@@ -17,7 +17,7 @@ class Word:
     def __str__(self):
         return self.__unicode__().encode('unicode-escape')
     def __unicode__(self):
-        if USE_ORIGIN: return self.origin
+        if USE_ORIGIN: return self.origin + str(self.posid)
         else: return self.surface
     def __cmp__(self, other): # compare with pos and original form
         if cmp(self.posid, other.posid) != 0: return cmp(self.posid, other.posid)
@@ -40,7 +40,7 @@ class Word:
     def isPre(self): return 27 <= self.posid <= 30 #接頭詞
     def isVerb(self): return 31 <= self.posid <= 33 #動詞
     def isAdv(self): return 34 <= self.posid <= 35 #副詞
-    def isNoun(self): return 36 <= self.posid <= 67 and self.posid != 40 #名詞
+    def isNoun(self): return 36 <= self.posid <= 58 #名詞(代名詞・非自立を除く)
     def isPrenoun(self): return self.posid == 68 #連体詞
     def willBeEntry(self):
         return self.isNoun()
