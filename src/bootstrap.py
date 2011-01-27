@@ -7,6 +7,7 @@ Created on 2011/01/17
 '''
 import logging
 #logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.DEBUG)
 from math import log
 from collections import defaultdict
 from util import pairwise
@@ -39,7 +40,7 @@ def findSeed(targetCID, useTfIdf=True):
         if 0 < g < 200000000:
             if word.surface == '(': continue #huristics
             logging.log(logging.INFO, (u'word:%s[%d], cnt:%d, google-cnt:%d' % (word, word.posid, cnt, g)))
-            if len(dictY) < initialYMax and word.isNoun(): dictY.append(word.get())
+            if len(dictY) < initialYMax and word.isNoun() and word.posid != 40 : dictY.append(word.get())
             if len(dictV) < initialVMax and word.isAdj(): dictV.append(word.get())
             if len(dictY) == initialYMax and len(dictV) == initialVMax: break
     print 'seedY:', repr(dictY).decode('unicode-escape')
@@ -174,9 +175,6 @@ def selectNextYV(tobeYV, thresh=0.5):
     return set(nextYV[0]), set(nextYV[1])
 
 def bootstrap(opts, targetCID=None):
-    if opts.outfile: out = codecs.open(opts.outfile, 'w', 'utf-8')
-    else: out = sys.stdout
-
     phraseDict = createPhraseDict(targetCID)
     dictY, dictV = findSeed(targetCID, opts.tfidf)
     for loop in xrange(opts.maxLoop):
@@ -186,14 +184,14 @@ def bootstrap(opts, targetCID=None):
         nextY, nextV = selectNextYV(tobeYV)
         nextY -= dictY
         nextV -= dictV
-        #print '%d th additionalY'%(loop+1), repr(nextY).decode('unicode-escape')
-        #print '%d th additionalV'%(loop+1), repr(nextV).decode('unicode-escape')
+        print '%d th additionalY'%(loop+1), repr(nextY).decode('unicode-escape')
+        print '%d th additionalV'%(loop+1), repr(nextV).decode('unicode-escape')
         if not nextY and not nextV: break
         dictY |= nextY
         dictV |= nextV
 
     correspondDict = [defaultdict(list), defaultdict(list)]
-    for (scoreY, templateY, candY, originalY), (scoreV, templateV, candV, originalV) in candYV:
+    for (scoreY, templateY, candY, originalY), (scoreV, templateV, candV, originalV) in calcTemplateScores(dictY, dictV, phraseDict, getTemplates(dictY, dictV, phraseDict, spanMax=3, spanMin=0)):
         if scoreY >= 0.5:
             correspondDict[1][originalV] += candY
             for y in candY:
@@ -203,57 +201,57 @@ def bootstrap(opts, targetCID=None):
             for v in candV:
                 correspondDict[1][v].append(originalY)
 
-    print >>out, repr(dictY).decode('unicode-escape')
-    print >>out, repr(dictV).decode('unicode-escape')
-    print >>out, repr(correspondDict).decode('unicode-escape')
-    print >>out
-
-    if opts.outfile: out.close()
-
     return dictY, dictV, correspondDict
 
 
-def findCorrespondance(dict, line, wid):
-    prv = wid-1; nxt = wid+1
+def findCorrespondance(dict, line, wid, maxDist=None):
+    cnt = 1
     ret = []
-    while prv >= 0 or nxt < len(line):
-        if prv >= 0:
-            if line[prv].get() in dict:
-                ret.append(line[prv])
-            prv -= 1
-        if nxt < len(line):
-            if line[nxt].get() in dict:
-                ret.append(line[nxt])
-            nxt += 1
+    while (maxDist is None or cnt <= maxDist) and (wid-cnt >= 0 or wid+cnt < len(line)):
+        if wid-cnt >= 0:
+            if line[wid-cnt].get() in dict:
+                ret.append(line[wid-cnt])
+        if wid+cnt < len(line):
+            if line[wid+cnt].get() in dict:
+                ret.append(line[wid+cnt])
+        cnt += 1
     return ret
 
 def findEachYV(dictY, dictV, targetCID=None, minEachReview=1):
     Data = [] #Data[cid][pid] = [y{[v]}]
     Found = [] #Found[cid][pid] = [[ys],[vs]]
+    Rank = []
     for cid, category in enumerate(document.DOC):
-        if targetCID is not None and targetCID != cid:
-            Data.append([None]); Found.append([None,None])
-            continue
+        if targetCID is not None and targetCID != cid: continue
         Data.append([]); Found.append([])
+        rank = [defaultdict(int), defaultdict(int)]
         for pid, product in enumerate(category):
+            if len(product) < minEachReview:
+                Data[-1].append([]); Found[-1].append([])
+                continue
             data = defaultdict(list); found = [[],[]]
-            if len(product) < minEachReview: continue
             for rid, review in enumerate(product):
                 for lid, line in enumerate(review):
                     for wid, word in enumerate(line):
-                        logging.log(logging.DEBUG, (cid, pid, rid, lid, wid, unicode(word)))
+                        logging.log(logging.DEBUG, str((cid, pid, rid, lid, wid)) + unicode(word))
                         if word.get() in dictY:
-                            found[0].append(word)
-                            vs = findCorrespondance(dictV, line, wid)
-                            print 'y', unicode(word), repr(vs).decode('unicode-escape')
-                            if len(vs): data[word] += vs
+                            vs = findCorrespondance(dictV, line, wid, 10)
+                            #print 'y', unicode(word), repr(vs).decode('unicode-escape')
+                            if len(vs):
+                                data[word] += vs
+                                found[0].append(word)
                         if word.get() in dictV:
-                            found[1].append(word)
-                            ys = findCorrespondance(dictY, line, wid)
-                            print 'v', unicode(word), repr(ys).decode('unicode-escape')
-                            if len(ys): data[ys[0]] += [word]
+                            ys = findCorrespondance(dictY, line, wid, 10)
+                            #print 'v', unicode(word), repr(ys).decode('unicode-escape')
+                            if len(ys):
+                                data[ys[0]] += [word]
+                                found[1].append(word)
+            for i, f in enumerate(found):
+                for x in set(f):
+                    rank[i][x] += 1
             Data[-1].append(dict(data)); Found[-1].append(found)
-    return Data, Found
+        Rank.append([list(sorted(r.iteritems(), key=lambda x:x[1], reverse=True)) for r in rank])
+    return Data, Found, Rank
 
 def evaluateCoverage(cid, dictY):
     entries = product.getEntries(cid, minReviewCount=50)
@@ -267,18 +265,37 @@ def evaluateCoverage(cid, dictY):
     return coverage, entries
 
 def mainProc(opts, cid=None):
+    if opts.outfile: out = codecs.open(opts.outfile, 'w', 'utf-8')
+    else: out = sys.stdout
+
     if cid is None:
         targetCID = document.TARGET_CID
         cid = 0
     else:
         targetCID = cid
     print 'Category-%d:'%targetCID, product.SELECTED[targetCID]
+
     dictY, dictV, correspondDict = bootstrap(opts, cid)
-    #data, found = findEachYV(dictY, dictV, cid) #プロダクトごとのYV対応
-    #print 'data:', repr(data).decode('unicode-escape')
-    #print 'found:', repr(found).decode('unicode-escape')
+    print >>out, 'dictY', repr(dictY).decode('unicode-escape')
+    print >>out, 'dictV', repr(dictV).decode('unicode-escape')
+    print >>out, 'correspondDict', repr(correspondDict).decode('unicode-escape')
+
+    data, found, rank = findEachYV(dictY, dictV, cid) #プロダクトごとのYV対応
+    print >>out, 'data:', repr(data).decode('unicode-escape')
+    print >>out, 'found:', repr(found).decode('unicode-escape')
+    print >>out, 'rank:', repr(rank).decode('unicode-escape')
+
     coverage_ent = evaluateCoverage(targetCID, dictY) #評価項目の網羅率の測定
-    print 'coverage:', repr(coverage_ent).decode('unicode-escape')
+    print >>out, 'coverage:', repr(coverage_ent).decode('unicode-escape')
+    print
+
+    if opts.outfile: out.close()
+
+    result = codecs.open('out/result_%s.txt'%optsStr(opts), 'w', 'utf-8')
+    print >>result, repr(rank[0][0]).decode('unicode-escape')
+    print >>result, repr(rank[0][1]).decode('unicode-escape')
+    result.close()
+
     return coverage_ent
 
 def optsStr(opts):
