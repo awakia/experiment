@@ -18,13 +18,11 @@ import sys
 import codecs
 logging.basicConfig(level=logging.DEBUG)
 
-initialYMax = 10
-initialVMax = 10
 seedDictY = [(36,u'デザイン'),(36,u'機能'),(51,u'機能性'),(51,u'操作性'),(38,u'音'),(38,u'音質'),(51,u'使用感'),(38,u'液晶')]
 seedDictV = [(10,u'良い'),(36,u'満足'),(37,u'問題')]
 
 
-def findSeed(targetCID, useTfIdf=True, categoryName=''):
+def findSeed(targetCID, useTfIdf=True, categoryName='', initialYMax=10, initialVMax=10):
     import vocab
     seedY = []
     seedV = []
@@ -182,7 +180,7 @@ def selectNextYV(tobeYV, thresh=0.5):
 
 def bootstrap(opts, targetCID=None, categoryName='', result=None):
     phraseDict = createPhraseDict(targetCID)
-    seedY, seedV = findSeed(targetCID, useTfIdf=opts.tfidf, categoryName=categoryName)
+    seedY, seedV = findSeed(targetCID, useTfIdf=opts.tfidf, categoryName=categoryName, initialYMax=opts.seedSize, initialVMax=opts.seedSize)
     print >>result, u' '.join(map(lambda x:unicode(x[1]), seedY))
     dictY, dictV = set(seedY), set(seedV)
     for loop in xrange(opts.maxLoop):
@@ -336,6 +334,7 @@ if __name__ == '__main__':
     oparser.add_option('-o', '--outfile', dest='outfile', metavar='FILE', help='write.output to FILE')
     oparser.add_option('-T', "--TF", dest="tfidf", default=True, action="store_false", help="use TF but TF-IDF")
     oparser.add_option('-l', '--max_loop', dest='maxLoop', metavar='NUM', type='int', default=10, help='indicete maximum loop number.')
+    oparser.add_option('-S', '--seed_size', dest='seedSize', metavar='NUM', type='int', default=10, help='indicete seed size.')
     oparser.add_option('-w', "--want", dest="want", metavar='VAL', type='float', default=2.0, help="use TF but TF-IDF")
     opts, args = oparser.parse_args()
 
