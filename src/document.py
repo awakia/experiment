@@ -8,7 +8,8 @@ import product
 from word import Word
 
 TARGET_CID=None
-PKL_FILE='out/filc%d.pkl'
+PKL_FILE='out/categ%d.pkl'
+#PKL_FILE='out/filc%d.pkl'
 
 def getWord(position):
     (cid, pid, rid, lid, wid) = position
